@@ -1,0 +1,66 @@
+//
+//  models.swift
+//  heracles
+//
+//  Created by Miłosz Koczorowski on 04/10/2024.
+//
+
+import SwiftData
+import Foundation
+
+@Model
+final class Workout {
+    var name: String
+    var date: Date
+    var duration: Duration?
+    
+    @Relationship(deleteRule: .cascade)
+    var exercies = [WorkoutExercise]()
+    
+    init(name: String, date: Date) {
+        self.name = name
+        self.date = date
+    }
+    
+}
+
+// TODO: should this contain relationship to WorkoutExercises
+// TODO: add more fields
+@Model
+final class Exercise {
+    var name: String
+    
+    init(name: String) {
+        self.name = name
+    }
+}
+
+
+// TODO: rethink naming
+// this represents exercised tracked in a workout
+// and Exercise represents description of given exercise
+@Model
+final class WorkoutExercise {
+    @Relationship
+    var exercise: Exercise?
+    @Relationship(deleteRule: .cascade, inverse: \Set.workoutExercise)
+    var sets = [Set]()
+    init() {
+        
+    }
+}
+
+@Model
+final class Set {
+    var label: String
+    var reps: Int?
+    var weight: Double?
+    var completed = false
+    var workoutExercise: WorkoutExercise?
+    
+    init(label: String, reps: Int? = nil, weight: Double? = nil) {
+        self.label = label
+        self.reps = reps
+        self.weight = weight
+    }
+}
