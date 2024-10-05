@@ -172,6 +172,7 @@ struct ActiveWorkoutView : View {
     @Bindable var workout: Workout
     @State private var isExpanded = Swift.Set<WorkoutExercise>()
     @State private var showAddExercise: Bool = false
+    @State var editMode = EditMode.inactive
     
     var body: some View {
         VStack {
@@ -180,9 +181,18 @@ struct ActiveWorkoutView : View {
                         DisclosureGroup {
                             // TODO: custom discloure group styling
                             ActiveWorkoutExerciseSetHeader()
+                            
+                            //SetList(exercise: exercise)
+                               // .frame(height: 500)
                             ForEach(exercise.sets) { set in
                                 ActiveWorkoutSet(set: set)
                                     .listRowSeparator(.visible)
+                            }
+                            .onMove { from, to in
+                                move(exercise: exercise, from: from, to: to)
+                            }
+                            .onDelete { idx in
+                                delete(exercise: exercise, idx: idx)
                             }
                             ActiveWorkoutNewSet(exercise: exercise)
                         } label: {
@@ -225,16 +235,40 @@ struct ActiveWorkoutView : View {
                 AddExerciseDialog(workout: workout)
             }
             .toolbar {
-                    Button("Menu", systemImage: "ellipsis.circle") {
-                        
+                if editMode.isEditing {
+                    Button("Done", role: .cancel) {
+                        editMode = .inactive
+                    }
+                } else {
+                    Menu {
+                        Button("Edit", systemImage: "pencil") {
+                            editMode = .active
+                        }
+                        Section {
+                            Button("Cancel Workout", systemImage: "trash", role: .destructive) {}
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
                     }
                     Button("Finish") {}
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
-                
+                }
+//
             }
+            .onDisappear {
+                editMode = .inactive
+            }
+            .environment(\.editMode, $editMode)
         
             
+    }
+    
+    func move(exercise: WorkoutExercise, from source: IndexSet, to destination: Int) {
+        exercise.sets.move(fromOffsets: source, toOffset: destination)
+        }
+    func delete(exercise: WorkoutExercise, idx: IndexSet) {
+        exercise.sets.remove(atOffsets: idx)
     }
 }
 
