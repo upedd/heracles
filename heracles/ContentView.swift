@@ -139,6 +139,7 @@ struct ContentView: View {
                 Tab("Exercises", systemImage: "books.vertical") {
                     ExerciseLibrary()
                 }
+
             }.onAppear {
                 prepopulateExercises(context: context)
             }

@@ -34,37 +34,55 @@ struct ActiveWorkoutSet: View {
     @ScaledMetric private var textFieldWidth = 70
     
     var body: some View {
-        HStack {
+        HStack(alignment: .center) {
             Toggle("Completed", isOn: $set.completed)
                 .toggleStyle(CheckToggleStyle())
                 .labelsHidden()
+                .sensoryFeedback(.selection, trigger: set.completed)
             TextField("Set label", text: $set.label)
                 .labelsHidden()
             Spacer()
-            TextField("Reps", value: $set.reps, format: .number)
+            TextField("", value: $set.reps, format: .number)
                 .textFieldStyle(.roundedBorder)
                 .keyboardType(.numberPad)
                 .frame(maxWidth: textFieldWidth)
                 .disabled(set.completed)
-                TextField("Weight", value: $set.weight, format: .number)
+                .accessibilityLabel("reps")
+                TextField("", value: $set.weight, format: .number)
                     .textFieldStyle(.roundedBorder)
                     .keyboardType(.decimalPad)
                     .frame(maxWidth: textFieldWidth)
                     .disabled(set.completed)
-                Text("kg")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            
+                    .accessibilityLabel("weight")
         }
-        
+    }
+}
+
+// TODO: mess
+struct ActiveWorkoutExerciseSetHeader: View {
+    @ScaledMetric private var textFieldWidth = 70
+    @State private var isOn = false
+    var body: some View {
+        HStack {
+            Text("label")
+            Spacer()
+            Text("reps")
+                .frame(maxWidth: textFieldWidth, alignment: .leading)
+            Text("weight (kg)")
+                .frame(maxWidth: textFieldWidth)
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .padding([.leading], 44) // TODO: breaks type!
     }
 }
 
 struct ActiveWorkoutNewSet: View {
     @Bindable var exercise: WorkoutExercise
     var body: some View {
-        Button("New Set", systemImage: "plus.circle.fill", action: newSet)
+        Button("New Set", systemImage: "plus.circle", action: newSet)
             .foregroundStyle(Color.accentColor)
+            .padding( .vertical, 4)
         
     }
     
@@ -126,42 +144,94 @@ struct AddExerciseDialog: View {
     }
 }
 
+struct MyDisclosureStyle: DisclosureGroupStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack {
+            configuration.label
+            Spacer()
+            Image(systemName: "chevron.right")
+                .rotationEffect(.degrees(configuration.isExpanded ? 90 : 0))
+                .foregroundStyle(Color.accentColor)
+                .font(.system(size: 13, weight: .bold))
+                
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation {
+                configuration.isExpanded.toggle()
+            }
+        }.padding(.horizontal, 20)
+        if configuration.isExpanded {
+            configuration.content.padding(.horizontal, 20)
+        }
+    }
+}
+
+
 struct ActiveWorkoutView : View {
     @Bindable var workout: Workout
     @State private var isExpanded = Swift.Set<WorkoutExercise>()
     @State private var showAddExercise: Bool = false
     
     var body: some View {
+        VStack {
             List {
                 ForEach(workout.exercies) { exercise in
-                    DisclosureGroup {
-                        ForEach(exercise.sets) { set in
-                            ActiveWorkoutSet(set: set)
+                        DisclosureGroup {
+                            // TODO: custom discloure group styling
+                            ActiveWorkoutExerciseSetHeader()
+                            ForEach(exercise.sets) { set in
+                                ActiveWorkoutSet(set: set)
+                                    .listRowSeparator(.visible)
+                            }
+                            ActiveWorkoutNewSet(exercise: exercise)
+                        } label: {
+                            Text(exercise.exercise?.name ?? "Unknown exercise")
+                                .font(.title2.bold())
                         }
-                        ActiveWorkoutNewSet(exercise: exercise)
-                    } label: {
-                        Text(exercise.exercise?.name ?? "Unknown exercise")
-                            .font(.title2.bold())
+                        .disclosureGroupStyle(MyDisclosureStyle())
+                        .padding(.bottom, 10)
+            
+    
+                }
+                .listRowSeparator(.hidden)
+                Button {
+                    showAddExercise.toggle()
+                } label: {
+                    HStack {
+                        Spacer()
+                        Text("Add Exercise")
+                            .foregroundStyle(Color.accentColor)
+                            .font(.headline)
+                            .padding(.all, 8.0)
                         
+                        Spacer()
                     }
                 }
-        }.navigationTitle(workout.name)
-            .listStyle(.inset)
-            .toolbar {
-                ToolbarItemGroup(placement: .bottomBar) {
-                    Button {
-                        showAddExercise.toggle()
-                    } label: {
-                        HStack {
-                            Image(systemName: "plus.circle.fill")
-                            Text("Add Exercise")
-                        }
-                    }
-                    Spacer()
-                }
+                .buttonStyle(.bordered)
+                .padding()
+                .listRowSeparator(.hidden)
+                
             }
+            .listRowSeparator(.visible, edges: [.top, .bottom])
+            .listStyle(.inset)
+            .padding(.horizontal, -20)
+                        
+        }
+        .navigationTitle(workout.name)
+            
+
             .sheet(isPresented: $showAddExercise) {
                 AddExerciseDialog(workout: workout)
+            }
+            .toolbar {
+                    Button("Menu", systemImage: "ellipsis.circle") {
+                        
+                    }
+                    Button("Finish") {}
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                
             }
         
             
