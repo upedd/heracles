@@ -8,23 +8,7 @@
 import SwiftUI
 import SwiftData
 
-struct ExerciseLibrary: View {
-    @Query(sort: \Exercise.name)
-    private var exercises: [Exercise]
-    
-    var body: some View {
-        NavigationStack {
-            List(exercises) { exercise in
-                Text(exercise.name)
-                
-            }.onAppear {
-                print(exercises)
-            }
-            .navigationTitle("Exercises Library")
-        }
-        
-    }
-}
+
 
 struct StartWorkoutDialog: View {
     @Environment(\.modelContext) private var context
@@ -137,7 +121,7 @@ struct ContentView: View {
                     WorkoutList()
                 }
                 Tab("Exercises", systemImage: "books.vertical") {
-                    ExerciseLibrary()
+                    ExerciseListView()
                 }
 
             }.onAppear {

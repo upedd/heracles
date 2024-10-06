@@ -28,7 +28,13 @@ final class Workout {
 // TODO: add more fields
 @Model
 final class Exercise {
+    // maybe enum?
+    static let muscleGroups = ["Abs", "Biceps", "Calves", "Chest", "Forearms", "Glutes", "Hamstrings", "Lats", "Lower Back", "Upper Back", "Traps", "Triceps", "Other"]
     var name: String
+    var instructions = ""
+    var targetMuscleGroup = "Other"
+    var selection = [String]()
+    var youtubeVideoUrl = ""
     
     init(name: String) {
         self.name = name
