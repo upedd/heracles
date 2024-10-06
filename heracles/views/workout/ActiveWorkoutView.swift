@@ -10,6 +10,13 @@ import SwiftData
 import Foundation
 
 
+// TODO: bodyweight
+// TODO: cardio
+// TODO: supersets
+// TODO: warmup sets
+// TODO: dropsets
+// TODO: percentages and rpe
+
 struct CheckToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
         Button {
@@ -29,34 +36,7 @@ struct CheckToggleStyle: ToggleStyle {
 }
 
 
-struct ActiveWorkoutSet: View {
-    @Bindable var set: Set
-    @ScaledMetric private var textFieldWidth = 70
-    
-    var body: some View {
-        HStack(alignment: .center) {
-            Toggle("Completed", isOn: $set.completed)
-                .toggleStyle(CheckToggleStyle())
-                .labelsHidden()
-                .sensoryFeedback(.selection, trigger: set.completed)
-            TextField("Set label", text: $set.label)
-                .labelsHidden()
-            Spacer()
-            TextField("", value: $set.reps, format: .number)
-                .textFieldStyle(.roundedBorder)
-                .keyboardType(.numberPad)
-                .frame(maxWidth: textFieldWidth)
-                .disabled(set.completed)
-                .accessibilityLabel("reps")
-                TextField("", value: $set.weight, format: .number)
-                    .textFieldStyle(.roundedBorder)
-                    .keyboardType(.decimalPad)
-                    .frame(maxWidth: textFieldWidth)
-                    .disabled(set.completed)
-                    .accessibilityLabel("weight")
-        }
-    }
-}
+
 
 // TODO: mess
 struct ActiveWorkoutExerciseSetHeader: View {
@@ -98,7 +78,6 @@ struct AddExerciseDialog: View {
     private var exercises: [Exercise]
     
     @State private var searchText = ""
-
     
     @Environment(\.dismiss) private var dismiss
     
@@ -153,7 +132,6 @@ struct MyDisclosureStyle: DisclosureGroupStyle {
                 .rotationEffect(.degrees(configuration.isExpanded ? 90 : 0))
                 .foregroundStyle(Color.accentColor)
                 .font(.system(size: 13, weight: .bold))
-                
         }
         .contentShape(Rectangle())
         .onTapGesture {
@@ -167,42 +145,90 @@ struct MyDisclosureStyle: DisclosureGroupStyle {
     }
 }
 
+struct ExerciseFocusState: Hashable {
+    var set: Set
+    var fieldIdx: Int
+}
+
+struct ActiveWorkoutSet: View {
+    @FocusState.Binding var focusState: ExerciseFocusState?
+    @Bindable var set: Set
+    @ScaledMetric private var textFieldWidth = 70
+    
+    
+    var body: some View {
+        HStack(alignment: .center) {
+            Toggle("Completed", isOn: $set.completed)
+                .toggleStyle(CheckToggleStyle())
+                .labelsHidden()
+                .sensoryFeedback(.selection, trigger: set.completed)
+            TextField("Set label", text: $set.label)
+                .labelsHidden()
+                .focused($focusState, equals: .init(set: set, fieldIdx: 0))
+            Spacer()
+            TextField("", value: $set.reps, format: .number)
+                .textFieldStyle(.roundedBorder)
+                .keyboardType(.numberPad)
+                .frame(maxWidth: textFieldWidth)
+                .disabled(set.completed)
+                .accessibilityLabel("reps")
+                .focused($focusState, equals: .init(set: set, fieldIdx: 1))
+            TextField("", value: $set.weight, format: .number)
+                .textFieldStyle(.roundedBorder)
+                .keyboardType(.decimalPad)
+                .frame(maxWidth: textFieldWidth)
+                .disabled(set.completed)
+                .accessibilityLabel("weight")
+                .focused($focusState, equals: .init(set: set, fieldIdx: 2))
+        }
+    }
+    
+    
+}
+
+struct ActiveWorkoutExerciseView: View {
+    @FocusState.Binding var focusState: ExerciseFocusState?
+    @Bindable var exercise: WorkoutExercise
+    
+    var body: some View {
+        DisclosureGroup {
+            ActiveWorkoutExerciseSetHeader()
+            ForEach(exercise.sets) { set in
+                ActiveWorkoutSet(focusState: $focusState, set: set)
+                    .listRowSeparator(.visible)
+            }
+            .onMove(perform: move)
+            .onDelete(perform: delete)
+            ActiveWorkoutNewSet(exercise: exercise)
+        } label: {
+            Text(exercise.exercise?.name ?? "Unknown exercise")
+                .font(.title2.bold())
+        }
+        .disclosureGroupStyle(MyDisclosureStyle())
+    }
+    
+    func move(from source: IndexSet, to destination: Int) {
+        exercise.sets.move(fromOffsets: source, toOffset: destination)
+    }
+    func delete(idx: IndexSet) {
+        exercise.sets.remove(atOffsets: idx)
+    }
+}
+
 
 struct ActiveWorkoutView : View {
     @Bindable var workout: Workout
     @State private var isExpanded = Swift.Set<WorkoutExercise>()
     @State private var showAddExercise: Bool = false
     @State var editMode = EditMode.inactive
+    @FocusState var focusState: ExerciseFocusState?
     
     var body: some View {
         VStack {
             List {
                 ForEach(workout.exercies) { exercise in
-                        DisclosureGroup {
-                            // TODO: custom discloure group styling
-                            ActiveWorkoutExerciseSetHeader()
-                            
-                            //SetList(exercise: exercise)
-                               // .frame(height: 500)
-                            ForEach(exercise.sets) { set in
-                                ActiveWorkoutSet(set: set)
-                                    .listRowSeparator(.visible)
-                            }
-                            .onMove { from, to in
-                                move(exercise: exercise, from: from, to: to)
-                            }
-                            .onDelete { idx in
-                                delete(exercise: exercise, idx: idx)
-                            }
-                            ActiveWorkoutNewSet(exercise: exercise)
-                        } label: {
-                            Text(exercise.exercise?.name ?? "Unknown exercise")
-                                .font(.title2.bold())
-                        }
-                        .disclosureGroupStyle(MyDisclosureStyle())
+                    ActiveWorkoutExerciseView(focusState: $focusState, exercise: exercise)
                         .padding(.bottom, 10)
-            
-    
                 }
                 .listRowSeparator(.hidden)
                 Button {
@@ -226,56 +252,80 @@ struct ActiveWorkoutView : View {
             .listRowSeparator(.visible, edges: [.top, .bottom])
             .listStyle(.inset)
             .padding(.horizontal, -20)
-                        
+            
         }
         .navigationTitle(workout.name)
-            
-
-            .sheet(isPresented: $showAddExercise) {
-                AddExerciseDialog(workout: workout)
-            }
-            .toolbar {
-                if editMode.isEditing {
-                    Button("Done", role: .cancel) {
-                        editMode = .inactive
-                    }
-                } else {
-                    Menu {
-                        Button("Edit", systemImage: "pencil") {
-                            editMode = .active
-                        }
-                        Section {
-                            Button("Cancel Workout", systemImage: "trash", role: .destructive) {}
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                    }
-                    Button("Finish") {}
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
-                }
-//
-            }
-            .onDisappear {
-                editMode = .inactive
-            }
-            .environment(\.editMode, $editMode)
         
-            
+        
+        .sheet(isPresented: $showAddExercise) {
+            AddExerciseDialog(workout: workout)
+        }
+        .toolbar {
+            if focusState != nil {
+                Button("Done", role: .cancel) {
+                    focusState = nil
+                }
+            } else if editMode.isEditing {
+                Button("Done", role: .cancel) {
+                    editMode = .inactive
+                }
+            } else {
+                Menu {
+                    Button("Edit", systemImage: "pencil") {
+                        editMode = .active
+                    }
+                    Section {
+                        Button("Cancel Workout", systemImage: "trash", role: .destructive) {}
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                Button("Finish") {}
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+            }
+            //
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Next") {
+                    nextField()
+                }
+            }
+        }
+        .onDisappear {
+            editMode = .inactive
+        }
+        .environment(\.editMode, $editMode)
     }
     
-    func move(exercise: WorkoutExercise, from source: IndexSet, to destination: Int) {
-        exercise.sets.move(fromOffsets: source, toOffset: destination)
+    func nextField() {
+        guard focusState != nil else {
+            return
         }
-    func delete(exercise: WorkoutExercise, idx: IndexSet) {
-        exercise.sets.remove(atOffsets: idx)
+        print("next")
+        var focusState = focusState!
+        focusState.fieldIdx += 1
+        print(focusState)
+        if (focusState.fieldIdx == 3) {
+            let sets = focusState.set.workoutExercise?.sets
+            let idx = sets?.firstIndex(of: focusState.set)
+            guard sets != nil && idx != nil && idx! + 1 != sets!.count  else {
+                self.focusState = nil
+                return
+            }
+            print("next next")
+            focusState = .init(set: sets![idx! + 1], fieldIdx: 1)
+        }
+        self.focusState = focusState
     }
 }
 
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Workout.self, configurations: config)
-
+    
     let workout = Workout(name: "Morning Workout", date: Date.now)
     let dumbellRow = Exercise(name: "Dumbell row")
     let dumbellRowExercise = WorkoutExercise()
