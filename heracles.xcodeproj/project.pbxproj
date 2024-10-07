@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		648628702CB430D0007DFFE4 /* YouTubePlayerKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6486286F2CB430D0007DFFE4 /* YouTubePlayerKit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		64F260142CAFFA200073F570 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				648628702CB430D0007DFFE4 /* YouTubePlayerKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,12 +77,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		6486286E2CB430D0007DFFE4 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		64F25FFA2CAFFA1E0073F570 = {
 			isa = PBXGroup;
 			children = (
 				64F260052CAFFA1E0073F570 /* heracles */,
 				64F260162CAFFA200073F570 /* heraclesTests */,
 				64F260202CAFFA200073F570 /* heraclesUITests */,
+				6486286E2CB430D0007DFFE4 /* Frameworks */,
 				64F260042CAFFA1E0073F570 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -112,6 +125,7 @@
 			);
 			name = heracles;
 			packageProductDependencies = (
+				6486286F2CB430D0007DFFE4 /* YouTubePlayerKit */,
 			);
 			productName = heracles;
 			productReference = 64F260032CAFFA1E0073F570 /* heracles.app */;
@@ -195,6 +209,9 @@
 			);
 			mainGroup = 64F25FFA2CAFFA1E0073F570;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				648628502CB42FFC007DFFE4 /* XCRemoteSwiftPackageReference "YouTubePlayerKit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 64F260042CAFFA1E0073F570 /* Products */;
 			projectDirPath = "";
@@ -558,6 +575,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		648628502CB42FFC007DFFE4 /* XCRemoteSwiftPackageReference "YouTubePlayerKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SvenTiigi/YouTubePlayerKit.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.9.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		6486286F2CB430D0007DFFE4 /* YouTubePlayerKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 648628502CB42FFC007DFFE4 /* XCRemoteSwiftPackageReference "YouTubePlayerKit" */;
+			productName = YouTubePlayerKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 64F25FFB2CAFFA1E0073F570 /* Project object */;
 }

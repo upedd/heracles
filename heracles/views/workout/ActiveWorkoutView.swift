@@ -81,29 +81,57 @@ struct AddExerciseDialog: View {
     
     @Environment(\.dismiss) private var dismiss
     
+    @State private var selectedExercises = Swift.Set<Exercise>()
+    
+    @State private var showNewExercise = false
+    @State private var path = NavigationPath()
     var body: some View {
-        NavigationStack {
-            List(filteredExercises) { exercise in
+        NavigationStack(path: $path) {
+            List(filteredExercises, id: \.self, selection: $selectedExercises) { exercise in
                 HStack {
                     Text(exercise.name)
                     Spacer()
-                    Button("add \(exercise.name)", systemImage: "plus") {
-                        addExercise(exercise: exercise)
-                    }
-                    .labelStyle(.iconOnly)
+                    Button("Information", systemImage: "info.circle") {
+                        path.append(exercise)
+                    }.labelStyle(.iconOnly)
+                        .buttonStyle(.borderless) // NOTE: button style must be set in order to support multiple buttons on the same row for some reason
+
                 }
                 
             }
-            .navigationTitle("Add Exercise")
+            .navigationTitle("Select Exercises")
             .toolbar {
-                ToolbarItemGroup(placement: .topBarLeading) {
+                ToolbarItemGroup(placement: .cancellationAction) {
                     Button("Cancel") {
                         dismiss()
                     }
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("New Exercise", systemImage: "plus") {
+                        showNewExercise = true
+                    }
+                    .labelStyle(.iconOnly)
+                }
+                ToolbarItem(placement: .bottomBar) {
+                    Button("Add Selected (\(selectedExercises.count))") {
+                        // TODO: should add items in selected order
+                        for exercise in selectedExercises {
+                            addExercise(exercise: exercise)
+                        }
+                        dismiss()
+                    }.disabled(selectedExercises.count == 0)
+                }
             }
+            .environment(\.editMode, Binding.constant(EditMode.active))
             .navigationBarTitleDisplayMode(.inline)
-        }.searchable(text: $searchText)
+            .sheet(isPresented: $showNewExercise) {
+                NewExerciseView()
+            }
+            .searchable(text: $searchText)
+            .navigationDestination(for: Exercise.self) { exercise in
+                ExerciseView(exercise: exercise)
+            }
+        }
     }
     
     var filteredExercises: [Exercise] {
