@@ -13,6 +13,7 @@ final class Workout {
     var name: String
     var date: Date
     var duration: Duration?
+    var finished: Bool = true // temp: migration
     
     @Relationship(deleteRule: .cascade)
     var exercies = [WorkoutExercise]()
@@ -20,6 +21,7 @@ final class Workout {
     init(name: String, date: Date) {
         self.name = name
         self.date = date
+        self.finished = false
     }
     
 }

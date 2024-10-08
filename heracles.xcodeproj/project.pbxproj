@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		648628702CB430D0007DFFE4 /* YouTubePlayerKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6486286F2CB430D0007DFFE4 /* YouTubePlayerKit */; };
+		648628902CB46D38007DFFE4 /* LNPopupUI in Frameworks */ = {isa = PBXBuildFile; productRef = 6486288F2CB46D38007DFFE4 /* LNPopupUI */; };
+		648628912CB46D38007DFFE4 /* LNPopupUI in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 6486288F2CB46D38007DFFE4 /* LNPopupUI */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -26,6 +28,20 @@
 			remoteInfo = heracles;
 		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		648628922CB46D38007DFFE4 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				648628912CB46D38007DFFE4 /* LNPopupUI in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		64F260032CAFFA1E0073F570 /* heracles.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = heracles.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -57,6 +73,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				648628702CB430D0007DFFE4 /* YouTubePlayerKit in Frameworks */,
+				648628902CB46D38007DFFE4 /* LNPopupUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -115,6 +132,7 @@
 				64F25FFF2CAFFA1E0073F570 /* Sources */,
 				64F260002CAFFA1E0073F570 /* Frameworks */,
 				64F260012CAFFA1E0073F570 /* Resources */,
+				648628922CB46D38007DFFE4 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -126,6 +144,7 @@
 			name = heracles;
 			packageProductDependencies = (
 				6486286F2CB430D0007DFFE4 /* YouTubePlayerKit */,
+				6486288F2CB46D38007DFFE4 /* LNPopupUI */,
 			);
 			productName = heracles;
 			productReference = 64F260032CAFFA1E0073F570 /* heracles.app */;
@@ -211,6 +230,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				648628502CB42FFC007DFFE4 /* XCRemoteSwiftPackageReference "YouTubePlayerKit" */,
+				6486288E2CB46D0D007DFFE4 /* XCRemoteSwiftPackageReference "LNPopupUI" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 64F260042CAFFA1E0073F570 /* Products */;
@@ -585,6 +605,14 @@
 				minimumVersion = 1.9.0;
 			};
 		};
+		6486288E2CB46D0D007DFFE4 /* XCRemoteSwiftPackageReference "LNPopupUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/LeoNatan/LNPopupUI.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.8.7;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -592,6 +620,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 648628502CB42FFC007DFFE4 /* XCRemoteSwiftPackageReference "YouTubePlayerKit" */;
 			productName = YouTubePlayerKit;
+		};
+		6486288F2CB46D38007DFFE4 /* LNPopupUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6486288E2CB46D0D007DFFE4 /* XCRemoteSwiftPackageReference "LNPopupUI" */;
+			productName = LNPopupUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

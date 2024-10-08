@@ -1,6 +1,33 @@
 {
-  "originHash" : "838cedc1ff704f14426befc05257203bf3aaf397162004377a05b8e903ad2a57",
+  "originHash" : "117e02040790612fa0cfdddb910c9fa376af0fcc02714ed7228bbf789375b13b",
   "pins" : [
+    {
+      "identity" : "lnpopupcontroller",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/LeoNatan/LNPopupController.git",
+      "state" : {
+        "revision" : "bbd729e34be9813d1fa738a364c7baa4028076fb",
+        "version" : "2.19.12"
+      }
+    },
+    {
+      "identity" : "lnpopupui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/LeoNatan/LNPopupUI.git",
+      "state" : {
+        "revision" : "8e5abca5c0af5095e41036f93ad2fd6d7d7be4a1",
+        "version" : "1.8.7"
+      }
+    },
+    {
+      "identity" : "lnswiftuiutils",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/LeoNatan/LNSwiftUIUtils.git",
+      "state" : {
+        "revision" : "954a3adadc21d5b973c24e1320bdcc3d638c6a9c",
+        "version" : "1.1.1"
+      }
+    },
     {
       "identity" : "youtubeplayerkit",
       "kind" : "remoteSourceControl",

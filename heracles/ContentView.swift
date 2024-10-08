@@ -7,7 +7,7 @@
 
 import SwiftUI
 import SwiftData
-
+import LNPopupUI
 
 
 struct StartWorkoutDialog: View {
@@ -46,7 +46,8 @@ struct StartWorkoutDialog: View {
     }
     
     func addWorkout() {
-        context.insert(Workout(name: name, date: Date.now))
+        let workout = Workout(name: name, date: Date.now)
+        context.insert(workout)
         dismiss()
     }
 }
@@ -111,26 +112,60 @@ struct WorkoutList: View {
     }
 }
 
-struct ContentView: View {
-    
-    @Environment(\.modelContext) private var context
+struct PopupContent :  View {
+    @State var now = Date.now
+    @Query(sort: \Workout.date, order: .reverse)
+    private var workouts: [Workout]
+    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    var futureDate = Date.now.addingTimeInterval(60 * 60 * 24)
     
     var body: some View {
-            TabView {
-                Tab("Workouts", systemImage: "dumbbell") {
-                    WorkoutList()
-                }
-                Tab("Exercises", systemImage: "books.vertical") {
-                    ExerciseListView()
-                }
-
-            }.onAppear {
-                prepopulateExercises(context: context)
+        //Text("Hello World!")
+        if !workouts.isEmpty && !workouts.first!.finished {
+            let timeFormatter = SystemFormatStyle.Timer(countingUpIn: workouts.first!.date..<futureDate)
+            NavigationStack {
+                ActiveWorkoutView(workout: workouts.first!, durationDisplay: String(timeFormatter.format(now).characters))
+                    .popupTitle {
+                        VStack(alignment: .leading) {
+                            Text(workouts.first!.name)
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                    } subtitle: {
+                        VStack(alignment: .leading) {
+                            Text(now, format: timeFormatter)
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    
+            }.onReceive(timer) { _ in
+                now = Date.now
             }
-        
+        }
     }
     
-    
+}
+
+struct ContentView: View {
+    @Environment(\.modelContext) private var context
+    @State private var isPopupBarPresented = true
+    @State private var isPopupOpen = false
+
+    var body: some View {
+        TabView {
+            Tab("Workouts", systemImage: "dumbbell") {
+                WorkoutList()
+            }
+            Tab("Exercises", systemImage: "books.vertical") {
+                ExerciseListView()
+            }
+            
+        }
+        .popup(isBarPresented: $isPopupBarPresented, isPopupOpen: $isPopupOpen) {
+            PopupContent()
+        }
+        .onAppear {
+            prepopulateExercises(context: context)
+        }
+        
+    }
 }
 
 func prepopulateExercises(context: ModelContext) {

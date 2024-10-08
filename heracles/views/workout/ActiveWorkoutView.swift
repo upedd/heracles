@@ -246,6 +246,7 @@ struct ActiveWorkoutExerciseView: View {
 
 struct ActiveWorkoutView : View {
     @Bindable var workout: Workout
+    var durationDisplay: String = ""
     @State private var isExpanded = Swift.Set<WorkoutExercise>()
     @State private var showAddExercise: Bool = false
     @State var editMode = EditMode.inactive
@@ -253,7 +254,16 @@ struct ActiveWorkoutView : View {
     
     var body: some View {
         VStack {
-            List {
+            List { // TODO: spacing issues!
+                VStack(alignment: .leading) {
+                    Text(workout.date, format: .dateTime.weekday(.wide).day().month(.abbreviated))
+                        .font(.footnote.bold())
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+                    Text(workout.name)
+                        .font(.largeTitle.bold())
+                        
+                }.padding()
                 ForEach(workout.exercies) { exercise in
                     ActiveWorkoutExerciseView(focusState: $focusState, exercise: exercise)
                         .padding(.bottom, 10)
@@ -282,9 +292,8 @@ struct ActiveWorkoutView : View {
             .padding(.horizontal, -20)
             
         }
-        .navigationTitle(workout.name)
-        
-        
+        .navigationTitle(durationDisplay)
+        .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showAddExercise) {
             AddExerciseDialog(workout: workout)
         }
