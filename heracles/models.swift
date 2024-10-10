@@ -12,6 +12,7 @@ import Foundation
 final class Workout {
     var name: String
     var date: Date
+    var endDate: Date?
     var duration: Duration?
     var finished: Bool = true // temp: migration
     

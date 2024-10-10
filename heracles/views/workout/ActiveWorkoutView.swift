@@ -95,7 +95,6 @@ struct AddExerciseDialog: View {
                         path.append(exercise)
                     }.labelStyle(.iconOnly)
                         .buttonStyle(.borderless) // NOTE: button style must be set in order to support multiple buttons on the same row for some reason
-
                 }
                 
             }
@@ -244,56 +243,43 @@ struct ActiveWorkoutExerciseView: View {
 }
 
 
-struct ActiveWorkoutView : View {
+// For use in List!!!
+struct ActiveWorkoutExercisesEditor<Content: View, ToolbarContent: View>: View {
     @Bindable var workout: Workout
-    var durationDisplay: String = ""
-    @State private var isExpanded = Swift.Set<WorkoutExercise>()
-    @State private var showAddExercise: Bool = false
-    @State var editMode = EditMode.inactive
+    @Binding var editMode: EditMode
+    @ViewBuilder let content: Content
+    @ViewBuilder let toolbarContent: ToolbarContent
     @FocusState var focusState: ExerciseFocusState?
+    @State private var showAddExercise: Bool = false
     
     var body: some View {
-        VStack {
-            List { // TODO: spacing issues!
-                VStack(alignment: .leading) {
-                    Text(workout.date, format: .dateTime.weekday(.wide).day().month(.abbreviated))
-                        .font(.footnote.bold())
-                        .foregroundStyle(.secondary)
-                        .textCase(.uppercase)
-                    Text(workout.name)
-                        .font(.largeTitle.bold())
-                        
-                }.padding()
-                ForEach(workout.exercies) { exercise in
-                    ActiveWorkoutExerciseView(focusState: $focusState, exercise: exercise)
-                        .padding(.bottom, 10)
-                }
-                .listRowSeparator(.hidden)
-                Button {
-                    showAddExercise.toggle()
-                } label: {
-                    HStack {
-                        Spacer()
-                        Text("Add Exercise")
-                            .foregroundStyle(Color.accentColor)
-                            .font(.headline)
-                            .padding(.all, 8.0)
-                        
-                        Spacer()
-                    }
-                }
-                .buttonStyle(.bordered)
-                .padding()
-                .listRowSeparator(.hidden)
-                
+        List { // TODO: spacing issues!
+            content
+            ForEach(workout.exercies) { exercise in
+                ActiveWorkoutExerciseView(focusState: $focusState, exercise: exercise)
+                    .padding(.bottom, 10)
             }
-            .listRowSeparator(.visible, edges: [.top, .bottom])
-            .listStyle(.inset)
-            .padding(.horizontal, -20)
-            
+            .listRowSeparator(.hidden)
+            Button {
+                showAddExercise.toggle()
+            } label: {
+                HStack {
+                    Spacer()
+                    Text("Add Exercise")
+                        .foregroundStyle(Color.accentColor)
+                        .font(.headline)
+                        .padding(.all, 8.0)
+                    
+                    Spacer()
+                }
+            }
+            .buttonStyle(.bordered) // TODO: fix button style
+            .padding()
+            .listRowSeparator(.hidden)
         }
-        .navigationTitle(durationDisplay)
-        .navigationBarTitleDisplayMode(.inline)
+        .listRowSeparator(.visible, edges: [.top, .bottom])
+        .listStyle(.inset)
+        .padding(.horizontal, -20)
         .sheet(isPresented: $showAddExercise) {
             AddExerciseDialog(workout: workout)
         }
@@ -303,25 +289,10 @@ struct ActiveWorkoutView : View {
                     focusState = nil
                 }
             } else if editMode.isEditing {
-                Button("Done", role: .cancel) {
-                    editMode = .inactive
-                }
+                EditButton()
             } else {
-                Menu {
-                    Button("Edit", systemImage: "pencil") {
-                        editMode = .active
-                    }
-                    Section {
-                        Button("Cancel Workout", systemImage: "trash", role: .destructive) {}
-                    }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                }
-                Button("Finish") {}
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
+                toolbarContent
             }
-            //
         }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -331,20 +302,14 @@ struct ActiveWorkoutView : View {
                 }
             }
         }
-        .onDisappear {
-            editMode = .inactive
-        }
-        .environment(\.editMode, $editMode)
     }
     
     func nextField() {
         guard focusState != nil else {
             return
         }
-        print("next")
         var focusState = focusState!
         focusState.fieldIdx += 1
-        print(focusState)
         if (focusState.fieldIdx == 3) {
             let sets = focusState.set.workoutExercise?.sets
             let idx = sets?.firstIndex(of: focusState.set)
@@ -352,10 +317,82 @@ struct ActiveWorkoutView : View {
                 self.focusState = nil
                 return
             }
-            print("next next")
             focusState = .init(set: sets![idx! + 1], fieldIdx: 1)
         }
         self.focusState = focusState
+    }
+}
+
+struct ActiveWorkoutView : View {
+    @Bindable var workout: Workout
+    var durationDisplay: String = ""
+    @State private var isExpanded = Swift.Set<WorkoutExercise>()
+    @State var editMode = EditMode.inactive
+    @State var showFinishAlert = false
+    @EnvironmentObject var ctx: AppContext
+    @Environment(\.modelContext) var modelContext
+    @State var showDiscardWarning = false
+    
+    var body: some View {
+        VStack {
+            ActiveWorkoutExercisesEditor(workout: workout, editMode: $editMode) {
+                VStack(alignment: .leading) {
+                    Text(workout.date, format: .dateTime.weekday(.wide).day().month(.abbreviated))
+                        .font(.footnote.bold())
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+                    Text(workout.name)
+                        .font(.largeTitle.bold())
+                    
+                }.padding()
+            } toolbarContent: {
+                Menu {
+                    Button("Edit", systemImage: "pencil") {
+                        editMode = .active
+                    }
+                    Section {
+                        Button("Discard Workout", systemImage: "trash", role: .destructive) {
+                            showDiscardWarning = true
+                        }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                Button("Finish") {
+                    showFinishAlert = true
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+
+            }
+        }
+        .navigationTitle(durationDisplay)
+        .navigationBarTitleDisplayMode(.inline)
+        .alert("Finish Workout",isPresented: $showFinishAlert) { // TODO: message design?
+            Button("Finish") {
+                workout.finished = true
+                ctx.activeWorkout = nil
+                ctx.popupBarVisible = false
+                ctx.popupBarOpen = false
+                workout.endDate = Date.now
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This action is irreversible.")
+        }
+        .alert("Are you sure you want to discard this workout?", isPresented: $showDiscardWarning) {
+            Button("Discard", role: .destructive) {
+                modelContext.delete(workout)
+                ctx.activeWorkout = nil
+                ctx.popupBarOpen = false
+                ctx.popupBarVisible = false
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .onDisappear {
+            editMode = .inactive
+        }
+        .environment(\.editMode, $editMode)
     }
 }
 
