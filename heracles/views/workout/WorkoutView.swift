@@ -13,18 +13,20 @@ struct WorkoutInfoSheet : View {
     @Bindable var workout: Workout
     @State private var name: String
     @State private var date: Date
-    @State private var duration: Duration?
+    @State private var selectedHours = 0
+    @State private var selectedMinutes = 0
+    @State private var selectedSeconds = 0
     
     init(workout: Workout) {
         print(workout)
         self.workout = workout
         self.name = workout.name
         self.date = workout.date
-        self.duration = workout.duration
+        
     }
     
     @State private var showDiscardWarning = false
-    @State private var timeInterval = 60.0 * 30.0 + 5
+    @State private var showDurationSelector = false
     
     @Environment(\.dismiss) var dismiss
     var body: some View {
@@ -35,7 +37,20 @@ struct WorkoutInfoSheet : View {
                 }
                 Section {
                     DatePicker("Start Time", selection: $date)
-                    // TODO: add duration
+                    HStack {
+                        Text("Duration")
+                        Spacer()
+                        Button {
+                            showDurationSelector = true
+                        } label: {
+                            Text(makeDuration().formatted(.time(pattern: .hourMinuteSecond)))
+                        }.popover(isPresented: $showDurationSelector) {
+                            DurationPicker(selectedHours: $selectedHours, selectedMinutes: $selectedMinutes, selectedSeconds: $selectedSeconds)
+                                .presentationCompactAdaptation(.popover)
+                        }
+                        .buttonStyle(.bordered)
+                        .foregroundStyle(.primary)
+                    }
                 }
             }
             .navigationTitle("Workout Info")
@@ -43,7 +58,7 @@ struct WorkoutInfoSheet : View {
             .toolbar {
                 ToolbarItemGroup(placement: .cancellationAction) {
                     Button("Cancel") {
-                        if workout.name == name && workout.date == date && workout.duration == duration {
+                        if workout.name == name && workout.date == date && workout.duration == makeDuration() {
                             dismiss()
                         } else {
                             showDiscardWarning = true
@@ -55,7 +70,7 @@ struct WorkoutInfoSheet : View {
                     Button("Done") {
                         workout.name = name
                         workout.date = date
-                        workout.duration = duration
+                        workout.duration = makeDuration()
                         dismiss()
                     }
                 }
@@ -66,8 +81,21 @@ struct WorkoutInfoSheet : View {
                 }
                 Button("Cancel", role: .cancel) {}
             }
+            .onAppear {
+                if workout.duration != nil {
+                    // TODO: more elegant code!
+                    let seconds = Int(workout.duration!.components.seconds)
+                    selectedHours = seconds / 3600
+                    selectedMinutes = (seconds % 3600) / 60
+                    selectedSeconds = seconds % 60
+                }
+            }
             
         }
+    }
+    
+    func makeDuration() -> Duration {
+        Duration(secondsComponent: Int64(selectedSeconds + 60 * selectedMinutes + 3600 * selectedHours), attosecondsComponent: 0)
     }
 }
 
@@ -91,12 +119,12 @@ struct WorkoutView: View {
                             Text(workout.date, format: .dateTime.weekday(.wide).day().month(.wide))
                         }
                         .foregroundStyle(.secondary)
-                        if workout.endDate != nil { // Note: Possibly remove
+                        if workout.duration != nil { // Note: Possibly remove
                             HStack {
                                 Image(systemName: "clock")
                                     .imageScale(.small)
 
-                                Text(Duration(secondsComponent: Int64(workout.endDate!.timeIntervalSince(workout.date)), attosecondsComponent: 0).formatted(.time(pattern: .hourMinuteSecond)))
+                                Text(workout.duration!.formatted(.time(pattern: .hourMinuteSecond)))
                             }
                             .foregroundStyle(.secondary)
                         }

@@ -18,18 +18,32 @@ import Foundation
 // TODO: percentages and rpe
 
 struct CheckToggleStyle: ToggleStyle {
+    @Bindable var set: Set
+    var icon: String
+    
     func makeBody(configuration: Configuration) -> some View {
-        Button {
-            configuration.isOn.toggle()
+        Menu {
+            Button {
+                set.isWarmup = false
+            } label: {
+                Label("Working Set", systemImage: "number.circle")
+            }
+            Button {
+                set.isWarmup = true
+            } label: {
+                Label("Warmup Set", systemImage: "w.circle")
+            }
         } label: {
             Label {
                 
             } icon: {
-                Image(systemName: configuration.isOn ? "inset.filled.circle" : "circle")
+                Image(systemName: configuration.isOn ? "\(icon).circle.fill" : "\(icon).circle")
                     .foregroundStyle(configuration.isOn ? Color.accentColor : .secondary)
                     .accessibility(label: Text(configuration.isOn ? "Checked" : "Unchecked"))
                     .imageScale(.large)
             }
+        } primaryAction: {
+            configuration.isOn.toggle()
         }
         .buttonStyle(.plain)
     }
@@ -63,7 +77,7 @@ struct ActiveWorkoutNewSet: View {
         Button("New Set", systemImage: "plus.circle", action: newSet)
             .foregroundStyle(Color.accentColor)
             .padding( .vertical, 4)
-        
+            .buttonStyle(.plain)
     }
     
     func newSet() {
@@ -152,6 +166,7 @@ struct AddExerciseDialog: View {
 
 struct MyDisclosureStyle: DisclosureGroupStyle {
     func makeBody(configuration: Configuration) -> some View {
+        
         HStack {
             configuration.label
             Spacer()
@@ -165,9 +180,9 @@ struct MyDisclosureStyle: DisclosureGroupStyle {
             withAnimation {
                 configuration.isExpanded.toggle()
             }
-        }.padding(.horizontal, 20)
+        }
         if configuration.isExpanded {
-            configuration.content.padding(.horizontal, 20)
+            configuration.content
         }
     }
 }
@@ -180,58 +195,182 @@ struct ExerciseFocusState: Hashable {
 struct ActiveWorkoutSet: View {
     @FocusState.Binding var focusState: ExerciseFocusState?
     @Bindable var set: Set
+    var idx: Int
     @ScaledMetric private var textFieldWidth = 70
     
-    
     var body: some View {
-        HStack(alignment: .center) {
+        
             Toggle("Completed", isOn: $set.completed)
-                .toggleStyle(CheckToggleStyle())
+                .toggleStyle(CheckToggleStyle(set: set, icon: set.isWarmup ? "w" : "\(idx + 1)"))
                 .labelsHidden()
-                .sensoryFeedback(.selection, trigger: set.completed)
-            TextField("Set label", text: $set.label)
-                .labelsHidden()
-                .focused($focusState, equals: .init(set: set, fieldIdx: 0))
+                .sensoryFeedback(.success, trigger: set.completed)
+                .frame(maxWidth: textFieldWidth)
+            Spacer()
+            Text("10x30kg")
+                .font(.subheadline)
+                .frame(maxWidth: textFieldWidth)
             Spacer()
             TextField("", value: $set.reps, format: .number)
                 .textFieldStyle(.roundedBorder)
                 .keyboardType(.numberPad)
                 .frame(maxWidth: textFieldWidth)
-                .disabled(set.completed)
                 .accessibilityLabel("reps")
                 .focused($focusState, equals: .init(set: set, fieldIdx: 1))
+                .multilineTextAlignment(.center)
+            Spacer()
             TextField("", value: $set.weight, format: .number)
                 .textFieldStyle(.roundedBorder)
                 .keyboardType(.decimalPad)
                 .frame(maxWidth: textFieldWidth)
-                .disabled(set.completed)
                 .accessibilityLabel("weight")
                 .focused($focusState, equals: .init(set: set, fieldIdx: 2))
-        }
+                .multilineTextAlignment(.center)
     }
     
     
 }
 
+struct MyButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        GridRow {
+            configuration.label
+        }
+    }
+}
+
+
+// TODO: needs some tweaking on wider screens
+
 struct ActiveWorkoutExerciseView: View {
     @FocusState.Binding var focusState: ExerciseFocusState?
     @Bindable var exercise: WorkoutExercise
+    @Environment(\.editMode) var editMode
+    @ScaledMetric private var textFieldWidth = 70
     
+    @State var showDetailsSheet = false
+    
+    // TODO: make functional!
+    @State var weightUnit = 0
+    @State var trackRpe = 0
+    @State var autoRestTimer = 0
     var body: some View {
-        DisclosureGroup {
-            ActiveWorkoutExerciseSetHeader()
-            ForEach(exercise.sets) { set in
-                ActiveWorkoutSet(focusState: $focusState, set: set)
-                    .listRowSeparator(.visible)
-            }
-            .onMove(perform: move)
-            .onDelete(perform: delete)
-            ActiveWorkoutNewSet(exercise: exercise)
+        DisclosureGroup(isExpanded: $exercise.expanded) {
+                HStack() {
+                    // header!
+                    Color.clear.frame(width: 0, height: 0)
+                        .frame(maxWidth: textFieldWidth)
+                    Spacer()
+                    Text("previous")
+                        .frame(maxWidth: textFieldWidth)
+                    Spacer()
+                    Text("reps")
+                        .frame(width: textFieldWidth)
+                    Spacer()
+                    Text("weight (kg)")
+                        .frame(width: textFieldWidth)
+                }.font(.caption)
+                    .foregroundStyle(.secondary)
+                // TODO: ensure warmup sets at beginning
+                ForEach(Array(exercise.sets.enumerated()), id: \.element) { idx, set in
+                    HStack {
+                        ActiveWorkoutSet(focusState: $focusState, set: set, idx: idx)
+                    }
+                    .overlay(Divider().padding(.horizontal, -40).offset(y: 15), alignment: .bottom)
+                }
+                
+                .onMove(perform: move)
+                .onDelete(perform: delete)
+                
+                Button {
+                    exercise.sets.append(Set(label: ""))
+                } label: {
+                    Label {
+                        
+                    } icon: {
+                        Image(systemName: "plus.circle")
+                            .imageScale(.large)
+                    }
+                }.buttonStyle(.plain)
+                    .foregroundStyle(.accent)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 12)
+                    .padding(.top, 5)
         } label: {
-            Text(exercise.exercise?.name ?? "Unknown exercise")
-                .font(.title2.bold())
+            HStack(alignment: .center) {
+                Text(exercise.exercise?.name ?? "Unknown exercise")
+                    .font(.title2.bold())
+                Spacer()
+                Menu("Exercise Menu", systemImage: "ellipsis") {
+                    Section {
+                        Button("Details", systemImage: "info") {
+                            showDetailsSheet = true
+                        }
+                        
+                    }
+                    Section {
+                        Button("Substitute", systemImage: "rectangle.2.swap") {
+                            
+                        }
+                        Button("Add a Note", systemImage: "square.and.pencil") {
+                            
+                        }
+                        Button("Add Warmup Sets", systemImage: "figure.cooldown") {
+                            
+                        }
+                    }
+                    Section {
+                        Menu {
+                            Picker(selection: $autoRestTimer, label: Text("Auto Rest Timer")) {
+                                Text("Off").tag(0)
+                                Text("On").tag(1)
+                            }
+                        } label: {
+                            Button(action: {}) {
+                                Text("Auto Rest Timer")
+                                Text(weightUnit == 0 ? "Off" : "On")
+                                Image(systemName: "timer")
+                            }
+                        }
+                        Menu {
+                            Picker(selection: $weightUnit, label: Text("Weight Unit")) {
+                                Text("kg").tag(0)
+                                Text("lbs").tag(1)
+                            }
+                        } label: {
+                            Button(action: {}) {
+                                Text("Weight Unit")
+                                Text(weightUnit == 0 ? "kg" : "lbs")
+                                Image(systemName: "scalemass")
+                            }
+                        }
+                        Menu {
+                            Picker(selection: $trackRpe, label: Text("Track RPE")) {
+                                Text("Off").tag(0)
+                                Text("On").tag(1)
+                            }
+                        } label: {
+                            Button(action: {}) {
+                                Text("Track RPE")
+                                Text(weightUnit == 0 ? "Off" : "On")
+                                Image(systemName: "number")
+                            }
+                        }
+                    }
+                    Section {
+                        Button("Delete", systemImage: "trash", role: .destructive) {
+                            
+                        }
+                    }
+                    
+                }.labelStyle(.iconOnly)
+                    .padding(.trailing, 10)
+                
+            }
         }
         .disclosureGroupStyle(MyDisclosureStyle())
+        .sheet(isPresented: $showDetailsSheet) {
+            ExerciseView(exercise: exercise.exercise!)
+        }
     }
     
     func move(from source: IndexSet, to destination: Int) {
@@ -268,18 +407,19 @@ struct ActiveWorkoutExercisesEditor<Content: View, ToolbarContent: View>: View {
                     Text("Add Exercise")
                         .foregroundStyle(Color.accentColor)
                         .font(.headline)
-                        .padding(.all, 8.0)
-                    
                     Spacer()
                 }
+                .padding(.all, 15)
+                .background(Material.regular)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
             }
-            .buttonStyle(.bordered) // TODO: fix button style
-            .padding()
+            //.background(Color(UIColor.systemBackground))
+            .buttonStyle(.plain)
+            
             .listRowSeparator(.hidden)
         }
         .listRowSeparator(.visible, edges: [.top, .bottom])
         .listStyle(.inset)
-        .padding(.horizontal, -20)
         .sheet(isPresented: $showAddExercise) {
             AddExerciseDialog(workout: workout)
         }
@@ -344,7 +484,7 @@ struct ActiveWorkoutView : View {
                     Text(workout.name)
                         .font(.largeTitle.bold())
                     
-                }.padding()
+                }
             } toolbarContent: {
                 Menu {
                     Button("Edit", systemImage: "pencil") {
@@ -374,7 +514,7 @@ struct ActiveWorkoutView : View {
                 ctx.activeWorkout = nil
                 ctx.popupBarVisible = false
                 ctx.popupBarOpen = false
-                workout.endDate = Date.now
+                workout.duration = Duration(secondsComponent: Int64(Date.now.timeIntervalSince(workout.date)), attosecondsComponent: 0)
             }
             Button("Cancel", role: .cancel) {}
         } message: {

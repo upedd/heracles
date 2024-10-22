@@ -54,6 +54,8 @@ final class WorkoutExercise {
     var exercise: Exercise?
     @Relationship(deleteRule: .cascade, inverse: \Set.workoutExercise)
     var sets = [Set]()
+    
+    var expanded = true
     init() {
         
     }
@@ -66,6 +68,7 @@ final class Set {
     var weight: Double?
     var completed = false
     var workoutExercise: WorkoutExercise?
+    var isWarmup = false
     
     init(label: String, reps: Int? = nil, weight: Double? = nil) {
         self.label = label

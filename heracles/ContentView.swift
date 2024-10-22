@@ -61,7 +61,6 @@ struct WorkoutListItem: View {
     @Bindable var workout: Workout
     @EnvironmentObject var workoutPath: WorkoutPath
     var body: some View {
-        // TODO: weird button hitbox
         Button {
             workoutPath.path.append(workout)
         } label: {
@@ -70,8 +69,8 @@ struct WorkoutListItem: View {
                     Text(workout.name)
                         .font(.body)
                     Group { // Note: possibly remove
-                        if workout.endDate != nil {
-                            Text(Duration(secondsComponent: Int64(workout.endDate!.timeIntervalSince(workout.date)), attosecondsComponent: 0).formatted(.time(pattern: .hourMinuteSecond)))
+                        if workout.duration != nil {
+                            Text(workout.duration!.formatted(.time(pattern: .hourMinuteSecond)))
                         } else {
                             Text("0:48:03")
                         }
@@ -87,13 +86,14 @@ struct WorkoutListItem: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .padding(.horizontal, 15)
+            .padding(.bottom, 15)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Material.regular)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(PlainButtonStyle())
-        .padding(.horizontal, 15)
-        .padding(.bottom, 15)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Material.regular)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        
         
     }
 }
