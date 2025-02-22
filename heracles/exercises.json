@@ -1,0 +1,42 @@
+[
+    {
+        "name": "Bench Press",
+        "type": "weight_reps",
+        "primaryMuscleGroup": "chest",
+        "secondaryMuscleGroups": ["triceps", "front_delts"],
+        "instructions": "Lie flat on a bench with feet firmly on the ground.\nGrip the barbell slightly wider than shoulder-width apart.\nUnrack the barbell and hold it straight above your chest with arms fully extended.\nLower the barbell slowly to your mid-chest, keeping elbows at a 45-degree angle.\nPause briefly when the barbell touches your chest.\nPush the barbell back up to the starting position, exhaling as you press.\nLock out your arms at the top and repeat for desired reps.\nRack the barbell safely after completing your set.",
+        "youtubeVideoURL": "https://www.youtube.com/watch?v=SCVCLChPQFY"
+    },
+    {
+        "name": "Barbell Rows",
+        "type": "weight_reps",
+        "primaryMuscleGroup": "upper_back",
+        "secondaryMuscleGroups": ["lats", "lower_back"],
+        "instructions": "Stand with feet shoulder-width apart and bend knees slightly.\nGrip the barbell with hands slightly wider than shoulder-width, palms facing down.\nHinge at the hips to lean your torso forward, keeping your back straight.\nPull the barbell towards your lower chest, squeezing your shoulder blades together.\nPause briefly at the top of the movement.\nLower the barbell back to the starting position in a controlled manner.\nRepeat for desired reps.",
+        "youtubeVideoURL": "https://www.youtube.com/watch?v=FWJR5Ve8bnQ"
+    },
+    {
+        "name": "Dumbbell Lateral Raise",
+        "type": "weight_reps",
+        "primaryMuscleGroup": "side_delts",
+        "secondaryMuscleGroups": ["front_delts", "rear_delts"],
+        "instructions": "Stand upright with feet shoulder-width apart, holding a dumbbell in each hand.\nKeep your arms slightly bent and palms facing inward.\nRaise the dumbbells out to the sides until your arms are parallel to the floor.\nPause briefly at the top, ensuring your shoulders are doing the work.\nLower the dumbbells back to the starting position in a controlled manner.\nRepeat for desired reps.",
+        "youtubeVideoURL": "https://www.youtube.com/watch?v=3VcKaXpzqRo"
+    },
+    {
+        "name": "Pull-Up",
+        "type": "bodyweight_reps",
+        "primaryMuscleGroup": "lats",
+        "secondaryMuscleGroups": ["biceps", "forearms"],
+        "instructions": "Grip the pull-up bar with hands slightly wider than shoulder-width, palms facing away.\nHang freely with arms fully extended and engage your core.\nPull your body upward by bending your elbows, driving your elbows down to the floor.\nContinue pulling until your chin is above the bar.\nPause briefly at the top of the movement.\nLower your body back to the starting position in a controlled manner.\nRepeat for desired reps.",
+        "youtubeVideoURL": "https://www.youtube.com/watch?v=eGo4IYlbE5g"
+    },
+    {
+        "name": "Deadlift",
+        "type": "weight_reps",
+        "primaryMuscleGroup": "hamstrings",
+        "secondaryMuscleGroups": ["lower_back", "upper_back"],
+        "instructions": "Stand with feet hip-width apart, toes under the barbell.\nBend at the hips and knees to grip the barbell with hands slightly wider than shoulder-width, palms facing down or mixed grip.\nKeep your back straight, chest up, and shoulders slightly in front of the bar.\nEngage your core and lift the bar by extending your hips and knees, keeping the bar close to your body.\nStand fully upright, locking out your hips and knees at the top.\nPause briefly in the standing position.\nLower the bar back to the ground by bending at the hips and knees, maintaining a straight back.\nRepeat for desired reps.",
+        "youtubeVideoURL": "https://www.youtube.com/watch?v=op9kVnSso6Q"
+    },
+]

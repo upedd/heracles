@@ -1,0 +1,105 @@
+//
+//  ExerciseHistoryView.swift
+//  heracles
+//
+//  Created by Miłosz Koczorowski on 14/02/2025.
+//
+
+import SwiftUI
+// TODO: this should link to workout when we implement workout view
+struct WorkoutExerciseView: View {
+    var workoutExercise: WorkoutExercise
+    
+    var body: some View {
+        VStack(alignment: .leading) {
+            HStack {
+                Text(workoutExercise.workout!.name)
+                    .font(.headline)
+                Spacer()
+                Text(workoutExercise.workout!.date.formatted())
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.bottom, 5)
+            ForEach(workoutExercise.sets) { set in
+                HStack {
+                    Text("\(set.weight!.formatted()) kg × \(set.reps!)")
+                }
+            }
+        }
+        .padding()
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+}
+
+struct ExerciseHistorySectionHeaderView : View {
+    var title: String
+    var body : some View {
+        HStack {
+            Text(title)
+                .font(.title2.bold())
+                .foregroundStyle(Color.primary)
+                .padding(.leading, 20)
+                .padding(.vertical, 10)
+            Spacer()
+        }
+        .listRowInsets(EdgeInsets())
+        .background(Color(.systemBackground))
+    }
+}
+
+struct ExerciseHistoryView: View {
+    var workoutExercises: [WorkoutExercise]
+    // performance!
+    var groupedExercises: [String: [WorkoutExercise]] {
+        Dictionary(grouping: workoutExercises, by: {$0.workout!.date.formatted(.dateTime.month(.wide).year())})
+    }
+    
+    var body: some View {
+        List(Array(groupedExercises.keys), id: \.self) { group in
+            Section {
+                ForEach(groupedExercises[group]!) { workoutExercise in
+                    WorkoutExerciseView(workoutExercise: workoutExercise)
+                }
+            } header: {
+                ExerciseHistorySectionHeaderView(title: group)
+            }
+            
+        }
+        .listStyle(.plain)
+    }
+}
+
+#Preview {
+    let exercise = Exercise(name: "Bench Press", type: .weight_reps, primaryMuscleGroup: .chest, secondaryMuscleGroups: [.triceps, .front_delts])
+    
+    let workout_exercises: [WorkoutExercise] = [
+        .init(exercise: exercise, sets: [
+            .init(reps: 8, weight: 60),
+            .init(reps: 8, weight: 70),
+            .init(reps: 6, weight: 70)
+        ]),
+        .init(exercise: exercise, sets: [
+            .init(reps: 8, weight: 60),
+            .init(reps: 8, weight: 70),
+            .init(reps: 6, weight: 70)
+        ]),
+        .init(exercise: exercise, sets: [
+            .init(reps: 8, weight: 60),
+            .init(reps: 8, weight: 70),
+            .init(reps: 6, weight: 70)
+        ]),
+    ]
+    
+    let workout = Workout(name: "Chest Day", exercises: workout_exercises)
+    
+    let workout2 = Workout(name: "Morning Workout", exercises: workout_exercises)
+    workout2.date =  Date.now.addingTimeInterval(-86400 * 64)
+    
+    workout_exercises[0].workout = workout
+    workout_exercises[1].workout = workout
+    workout_exercises[2].workout = workout2
+    
+    return ExerciseHistoryView(workoutExercises: workout_exercises)
+}
