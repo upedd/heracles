@@ -12,10 +12,27 @@ struct ExerciseInfoView : View {
     
     var body : some View {
         List {
-            if exercise.youtubeVideoURL != nil {
-                StateHandlingYoutubePlayer(player: YouTubePlayer(urlString: exercise.youtubeVideoURL!))
+            if exercise.video != nil {
+                StateHandlingYoutubePlayer(player: YouTubePlayer(urlString: exercise.video!))
                     .frame(height: 200)
                     .listRowInsets(EdgeInsets()) // removes default list item padding
+            } else if exercise.images != nil && exercise.images!.count > 0 {
+                AsyncImage(url: URL(string: exercise.images!.first!)) { phase in
+                    if let image = phase.image {
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .clipped()
+                    } else if let error = phase.error {
+                        ContentUnavailableView(
+                            "Error",
+                            systemImage: "exclamationmark.triangle.fill",
+                            description: Text("Image couldn't be loaded: \(error)")
+                        )
+                    }
+                }
+                .frame(height: 200)
+                .listRowInsets(EdgeInsets()) // removes default list item padding
             }
             
             
@@ -24,20 +41,20 @@ struct ExerciseInfoView : View {
                     Text("Primary")
                         .font(.headline)
                     Spacer()
-                    Text(exercise.primaryMuscleGroup.displayName())
+                    Text(exercise.primaryMuscles.map {$0.displayName()}.joined(separator: ", "))
                 }
-                if exercise.secondaryMuscleGroups.count > 0 {
+                if exercise.secondaryMuscles.count > 0 {
                     HStack {
                         Text("Secondary")
                             .font(.headline)
                         Spacer()
-                        Text(exercise.secondaryMuscleGroups.map {$0.displayName()}.joined(separator: ", "))
+                        Text(exercise.secondaryMuscles.map {$0.displayName()}.joined(separator: ", "))
                     }
                 }
             }
-            if exercise.instructions != nil {
+            if !exercise.instructions.isEmpty{
                 Section("Instructions") {
-                    ForEach(exercise.instructions!.components(separatedBy: "\n"), id: \.self) { instruction in
+                    ForEach(exercise.instructions, id: \.self) { instruction in
                         Text(instruction)
                     }
                 }

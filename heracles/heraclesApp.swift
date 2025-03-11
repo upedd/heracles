@@ -16,18 +16,21 @@ import SwiftData
             guard existingExercises == 0 else { return }
 
             // Load and decode the JSON.
-            guard let url = Bundle.main.url(forResource: "exercises", withExtension: "json") else {
+            guard let url = Bundle.main.url(forResource: "minified-exercises", withExtension: "json") else {
                 fatalError("Failed to find exercises.json")
             }
-
+        
             let data = try Data(contentsOf: url)
-            let exercises = try JSONDecoder().decode([Exercise].self, from: data)
+            let file = try JSONDecoder().decode(ExercisesFile.self, from: data)
             // Add all our data to the context.
-            for exercise in exercises {
+            for exercise in file.exercises {
+                if exercise.images != nil {
+                    print("debug")
+                }
                 container.mainContext.insert(exercise)
             }
         } catch {
-            print("Failed to pre-seed database.")
+            print("Failed to pre-seed database: \(error)")
         }
 }
 

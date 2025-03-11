@@ -9,6 +9,8 @@ import SwiftUI
 import YouTubePlayerKit
 import SwiftData
 
+// TODO: accent color based by muscle group
+
 struct ExerciseView: View {
     enum Tab: String, CaseIterable, Identifiable {
         case info
@@ -30,7 +32,7 @@ struct ExerciseView: View {
             } else  if selectedTab == .history {
                 ExerciseHistoryView(workoutExercises: workoutExercises.filter {$0.exercise == exercise}) // TODO: performance improvements
             } else {
-                ExerciseChartsView()
+                ExerciseChartsView(exercise: exercise)
             }
         }
             .navigationTitle(exercise.name)
@@ -50,9 +52,9 @@ struct ExerciseView: View {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Workout.self, configurations: config)
     
-    let exercise = Exercise(name: "Bench Press", type: .weight_reps, primaryMuscleGroup: .chest, secondaryMuscleGroups: [.triceps, .front_delts])
+    let exercise = Exercise(name: "Bench Press", type: .weight_reps, primaryMuscleGroup: .chest, secondaryMuscleGroups: [.triceps, .shoulders])
     
-    exercise.instructions = "Lie flat on a bench with feet firmly on the ground.\nGrip the barbell slightly wider than shoulder-width apart.\nUnrack the barbell and hold it straight above your chest with arms fully extended.\nLower the barbell slowly to your mid-chest, keeping elbows at a 45-degree angle.\nPause briefly when the barbell touches your chest.\nPush the barbell back up to the starting position, exhaling as you press.\nLock out your arms at the top and repeat for desired reps.\nRack the barbell safely after completing your set."
+    exercise.instructions = ["Lie flat on a bench with feet firmly on the ground.\nGrip the barbell slightly wider than shoulder-width apart.\nUnrack the barbell and hold it straight above your chest with arms fully extended.\nLower the barbell slowly to your mid-chest, keeping elbows at a 45-degree angle.\nPause briefly when the barbell touches your chest.\nPush the barbell back up to the starting position, exhaling as you press.\nLock out your arms at the top and repeat for desired reps.\nRack the barbell safely after completing your set."]
     
     exercise.pinnedNotes = [
         ExerciseNote(text: "Keep your back flat on the bench"),
@@ -60,7 +62,8 @@ struct ExerciseView: View {
         ExerciseNote(text: "Use a spotter for heavy weights")
     ]
     
-    exercise.youtubeVideoURL = "https://www.youtube.com/watch?v=U5zrloYWwxw"
+    //exercise.video = "https://www.youtube.com/watch?v=U5zrloYWwxw"
+    exercise.images = ["https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"]
     
     
     let workout_exercises: [WorkoutExercise] = [

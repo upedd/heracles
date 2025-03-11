@@ -9,29 +9,92 @@ import SwiftUI
 import SwiftData
 
 // TODO: add recents
+// TODO: add favorites
+// TODO: match functionality with exercise list
 struct SelectExercisesView: View {
+    
+    struct Item: View {
+        var exercise: Exercise
+        var isSelected: Bool
+        var onInfoClicked: () -> Void
+        var body : some View {
+            HStack {
+                // TODO: fix selection highlight
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .symbolRenderingMode(.multicolor)
+                    .foregroundStyle(isSelected ? Color.accentColor : Color(.tertiaryLabel), Color.primary)
+                    .imageScale(.large)
+                Text(exercise.name)
+                    .foregroundStyle(Color.primary)
+                    .multilineTextAlignment(.leading)
+                Spacer()
+                Button {
+                    onInfoClicked()
+                } label: {
+                    Image(systemName: "info.circle")
+                        .imageScale(.large)
+                }
+            }
+            .padding(.vertical, 5)
+            
+        }
+    }
+    
     @Query private var exercises: [Exercise]
     @State private var selection = Set<Exercise>()
     @State private var searchText = ""
     @Environment(\.dismiss) var dismiss
+    @StateObject private var tableData = TableViewData<Exercise>() // Holds
+    @State private var selectedEquipment: Set<Equipment> = .init( Equipment.allCases)
+    
+    @State private var selectedMuscles: Set<Muscle> = .init(Muscle.allCases)
+    @State private var showFilters = false
+    @State private var showInfo = false
+    @State private var showExercise: Exercise? = nil
     
     var onDone: (Set<Exercise>) -> Void
     
-    var filteredExercises: [Exercise] {
-        if searchText.isEmpty {
-            return exercises
-        }
-        return exercises.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    enum Grouping: String, CaseIterable, Equatable {
+        case name
+        case muscle
+        case equipment
     }
+    
+    @State private var grouping: Grouping = .name
     
     var body: some View {
         NavigationStack {
-            List(filteredExercises, id: \.self, selection: $selection) { exercise in
-                
-                Text(exercise.name)
+            VStack {
+                TableViewWrapper(data: tableData, onSelect: onSelect) { item in
+                    Item(exercise: item, isSelected: isSelected(item), onInfoClicked: {
+                        showExercise = item
+                        showInfo.toggle()
+                    })
+                }
             }
+            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
+            .edgesIgnoringSafeArea(.all)
+            .onAppear { updateGroupedExercises() }
             .environment(\.editMode, .constant(EditMode.active))
             .navigationTitle(selection.isEmpty ? "Select Exercises" : "\(selection.count) Selected")
+            .sheet(isPresented: $showInfo) {
+                NavigationStack {
+                    // FIXME: prevent this from flashing empty on sheet open!
+                    if let showExercise {
+                        ExerciseView(exercise: showExercise)
+                            .toolbar {
+                                ToolbarItem(placement: .navigationBarTrailing) {
+                                    Button {
+                                        showInfo.toggle()
+                                    } label: {
+                                        Text("Done")
+                                    }
+                                    
+                                }
+                            }
+                    }
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel", role: .cancel) {
@@ -45,7 +108,90 @@ struct SelectExercisesView: View {
                     }.bold()
                 }
             }
+            .toolbar {
+                ToolbarItemGroup(placement: .bottomBar) {
+                    
+                    Menu {
+                        Button {
+                            showFilters.toggle()
+                        } label: {
+                            Label("Filters", systemImage: "line.3.horizontal.decrease.circle")
+                        }
+                        .labelStyle(.iconOnly)
+                        Menu {
+                            Picker("Grouping", selection: $grouping) {
+                                ForEach(Grouping.allCases, id: \.self) { grouping in
+                                    Text(grouping.rawValue.capitalized).tag(grouping)
+                                }
+                            }
+                        } label: {
+                            Label("Group By", systemImage: "list.bullet")
+                            Text(grouping.rawValue.capitalized)
+                        }
+                        
+                        
+                        
+                        
+                    } label: {
+                        Label("More", systemImage: "ellipsis.circle")
+                    }
+                    Spacer()
+                    Button {
+                        // TODO: STUB
+                    } label: {
+                        Label("Add Exercise", systemImage: "plus")
+                    }
+                }
+                
+            }
+            .sheet(isPresented: $showFilters) {
+                ExerciseFilterSheet(selectedEquipment: $selectedEquipment, selectedMuscles: $selectedMuscles)
+            }
+            .onChange(of: exercises) {updateGroupedExercises() }
+            .onChange(of: searchText) { updateGroupedExercises() }
+            .onChange(of: selectedEquipment) {updateGroupedExercises() }
+            .onChange(of: grouping) {updateGroupedExercises() }
             .searchable(text: $searchText)
+        }
+    }
+    private func onSelect(_ exercise: Exercise) {
+        if selection.contains(exercise) {
+            selection.remove(exercise)
+        } else {
+            selection.insert(exercise)
+        }
+    }
+    
+    private func isSelected(_ exercise: Exercise) -> Bool {
+        selection.contains(exercise)
+    }
+    
+    private func updateGroupedExercises() {
+        let filtered = exercises
+            .filter { exercise in
+                searchText.isEmpty || exercise.name.localizedCaseInsensitiveContains(searchText)
+            }
+            .filter { exercise in
+                selectedEquipment.contains(where: { equipment in
+                    exercise.equipment.contains(equipment)
+                })
+            }
+            .sorted { $0.name < $1.name }
+        if grouping == .name {
+            
+            let dict = Dictionary(grouping: filtered, by: { String($0.name.prefix(1)) })
+            let sorted = dict.sorted { $0.key < $1.key }.map { (title: $0.key, items: $0.value) }
+            
+            tableData.sections = sorted // Trigger UI update
+        } else if grouping == .muscle {
+            // TODO: better grouping?!!?!!
+            let dict = Dictionary(grouping: filtered, by: { $0.primaryMuscles.first!.displayName() })
+            let sorted = dict.sorted { $0.key < $1.key }.map { (title: $0.key, items: $0.value) }
+            tableData.sections = sorted
+        }else if grouping == .equipment {
+            let dict = Dictionary(grouping: filtered, by: { $0.equipment.first!.displayName() })
+            let sorted = dict.sorted { $0.key < $1.key }.map { (title: $0.key, items: $0.value) }
+            tableData.sections = sorted
         }
     }
 }
@@ -83,15 +229,15 @@ struct ControlButtonStyle : ButtonStyle {
 
 extension TimeInterval {
     var formatted: String {
-            let hours = Int(self) / 3600
-            let minutes = (Int(self) % 3600) / 60
-            let seconds = Int(self) % 60
-            
-            if hours > 0 {
-                return String(format: "%d:%02d:%02d", hours, minutes, seconds)
-            } else {
-                return String(format: "%02d:%02d", minutes, seconds)
-            }
+        let hours = Int(self) / 3600
+        let minutes = (Int(self) % 3600) / 60
+        let seconds = Int(self) % 60
+        
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+        } else {
+            return String(format: "%02d:%02d", minutes, seconds)
+        }
     }
 }
 
@@ -154,11 +300,11 @@ struct ActiveWorkoutView: View {
                         }
                         .buttonStyle(ControlButtonStyle(color: .green))
                     }
-                        
+                    
                 }
                 .listRowInsets(EdgeInsets())
                 .frame(maxWidth: .infinity)
-                    .listRowBackground(Color.clear)
+                .listRowBackground(Color.clear)
                 Section {
                     TextField("Name", text: $workout.name)
                     TextField("Notes", text: $workout.notes)
@@ -166,7 +312,7 @@ struct ActiveWorkoutView: View {
                 Section {
                     ForEach(workout.exercises) { exercise in
                         NavigationLink {
-                            ActiveWorkoutExerciseView(exercise: exercise)
+                            ActiveWorkoutExerciseView(exercise: exercise, active: true)
                         } label: {
                             HStack {
                                 Text(exercise.exercise.name)
@@ -182,11 +328,18 @@ struct ActiveWorkoutView: View {
                     .onMove { indices, newOffset in
                         workout.exercises.move(fromOffsets: indices, toOffset: newOffset)
                     }
-
+                    
                     Button {
                         isAddingExercises.toggle()
                     } label: {
                         Label("Add Exercises", systemImage: "plus")
+                    }
+                    .sheet(isPresented: $isAddingExercises) {
+                        SelectExercisesView(onDone: { selected in
+                            for exercise in selected {
+                                workout.exercises.append(WorkoutExercise(exercise: exercise))
+                            }
+                        })
                     }
                 }
                 
@@ -194,13 +347,7 @@ struct ActiveWorkoutView: View {
             .toolbar {
                 EditButton()
             }
-            .sheet(isPresented: $isAddingExercises) {
-                SelectExercisesView(onDone: { selected in
-                    for exercise in selected {
-                        workout.exercises.append(WorkoutExercise(exercise: exercise))
-                    }
-                })
-            }
+            
             .confirmationDialog("Discard Workout?", isPresented: $showCancellationWarning) {
                 Button("Discard Workout", role: .destructive) {
                     modelContext.delete(workout)
@@ -210,6 +357,7 @@ struct ActiveWorkoutView: View {
             }
             .confirmationDialog("Finish Workout?", isPresented: $showFinishWarning) {
                 Button("Finish Workout") {
+                    workout.endDate = Date.now
                     workout.active = false
                 }
             } message: {

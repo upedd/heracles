@@ -8,31 +8,57 @@
 import SwiftUI
 import SwiftData
 
-struct ExercisesView: View {
-    @Query private var exercises: [Exercise]
-    
-    var group: MuscleGroup
-    
-    var body: some View {
-        List(exercises.filter {$0.primaryMuscleGroup == group}) { exercise in
-            NavigationLink(exercise.name) {
-                ExerciseView(exercise: exercise)
-            }
-        }
-        .navigationTitle("\(group.displayName()) Exercises")
-
-    }
-}
+// TODO: visual tweaks
+// TODO: add search bar
+// TODO: custom exercises
+// TODO: recent exercises
 
 struct ExercisesScreen: View {
     var body: some View {
         // TODO: split view instead for better support of landscape mode!
         NavigationStack {
-            List(MuscleGroup.allCases, id: \.self) { group in
+            List {
+                Section {
+                    NavigationLink {
+                        ExerciseList(selectedGroup: nil)
+                            .navigationTitle("All Exercises")
+                    } label: {
+                        
+                        Label("All", systemImage: "list.bullet")
+                    }
+                    NavigationLink {
+                        ExerciseList(selectedGroup: nil)
+                            .navigationTitle("Recent Exercises")
+                    } label: {
+                        
+                        Label("Recent", systemImage: "clock")
+                    }
+                    NavigationLink {
+                        ExerciseList(selectedGroup: nil)
+                            .navigationTitle("Custom Exercises")
+                    } label: {
+                        
+                        Label("Custom", systemImage: "star")
+                    }
+                }
                 
-                NavigationLink(group.displayName(), destination: ExercisesView(group: group))
+                Section {
+                    ForEach(MuscleGroup.allCases, id: \.self) { group in
+                        NavigationLink {
+                            ExerciseList(selectedGroup: group)
+                                .navigationTitle("\(group.rawValue.capitalized) Exercises")
+                        } label: {
+                            
+                            Image(systemName: "circle.fill")
+                                .foregroundColor(muscle_group_colors[group])
+                                .imageScale(.small)
+                            Text(group.rawValue.capitalized)
+                        }
+                    }
+                }
             }
             .navigationTitle("Exercises")
+            
         }
     }
 }

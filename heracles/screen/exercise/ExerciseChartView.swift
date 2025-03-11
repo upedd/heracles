@@ -8,39 +8,27 @@
 import SwiftUI
 import Charts
 
+enum ChartType {
+    case bar
+    case line
+}
+
 struct ChartData {
     var value: Double
     var date: Date
 }
 
-let data: [ChartData] = [
-    .init(value: 250, date: Date()),
-    .init(value: 220, date: Date().addingTimeInterval(-86400)),
-    .init(value: 220, date: Date().addingTimeInterval(-86400 * 2)),
-    .init(value: 200, date: Date().addingTimeInterval(-86400 * 3)),
-    .init(value: 210, date: Date().addingTimeInterval(-86400 * 5)),
-    .init(value: 190, date: Date().addingTimeInterval(-86400 * 6)),
-    .init(value: 180, date: Date().addingTimeInterval(-86400 * 8)),
-    .init(value: 180, date: Date().addingTimeInterval(-86400 * 11)),
-    .init(value: 190, date: Date().addingTimeInterval(-86400 * 12)),
-    .init(value: 185, date: Date().addingTimeInterval(-86400 * 14)),
-    .init(value: 170, date: Date().addingTimeInterval(-86400 * 16)),
-    .init(value: 170, date: Date().addingTimeInterval(-86400 * 17)),
-    .init(value: 165, date: Date().addingTimeInterval(-86400 * 20)),
-    .init(value: 160, date: Date().addingTimeInterval(-86400 * 22)),
-    .init(value: 170, date: Date().addingTimeInterval(-86400 * 25)),
-    .init(value: 160, date: Date().addingTimeInterval(-86400 * 26)),
-    .init(value: 150, date: Date().addingTimeInterval(-86400 * 28)),
-    .init(value: 150, date: Date().addingTimeInterval(-86400 * 31)),
-    .init(value: 150, date: Date().addingTimeInterval(-86400 * 33)),
-    .init(value: 145, date: Date().addingTimeInterval(-86400 * 34)),
-    .init(value: 140, date: Date().addingTimeInterval(-86400 * 37)),
-    .init(value: 135, date: Date().addingTimeInterval(-86400 * 39)),
-    .init(value: 140, date: Date().addingTimeInterval(-86400 * 40)),
-    .init(value: 145, date: Date().addingTimeInterval(-86400 * 41)),
-    .init(value: 130, date: Date().addingTimeInterval(-86400 * 44)),
-    .init(value: 125, date: Date().addingTimeInterval(-86400 * 45)),
-]
+// TODO: handle no data case for functions
+// TODO: handle if only one data point don't show function name!
+
+struct ChartFunction {
+    var function: ([Double]) -> Double
+    var name: String
+    
+    static let sum = ChartFunction(function: { $0.reduce(0, +)}, name: "Total")
+    static let max = ChartFunction(function: { $0.max() ?? 0 }, name: "Max")
+}
+
 
 struct ExerciseChartHeader : View {
     var title: String
@@ -178,6 +166,7 @@ struct ExerciseChart : View {
         var sum: Double
         var range: Range<Date>
         var distanceFromChart: CGFloat
+        var functionName: String
         
         @State private var size: CGSize = .zero
         
@@ -190,7 +179,7 @@ struct ExerciseChart : View {
         
         var body : some View {
             Group {
-                ExerciseChartHeader(title: "Total", value: sum.formatted(), unit: "kg", range: range)
+                ExerciseChartHeader(title: functionName, value: sum.formatted(), unit: "kg", range: range)
                     .frame(minWidth: endX != nil ? endX! - x : 0, alignment: .leading)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 0.5)
@@ -211,26 +200,24 @@ struct ExerciseChart : View {
             }
         }
     }
-    
     private let intervals: KeyValuePairs<String, ChartInterval> = [
         "W": .week,
         "M": .month,
         "6M": .sixMonths,
         "Y": .year
         ]
+    
+    var data: [ChartData]
+    var type: ChartType
+    var function: ChartFunction
     @State private var rawInterval: String = "W"
     
     @State private var chartBars: [(range: Range<Date>, value: Double)] = []
     
     func makeChartBars() -> [(range: Range<Date>, value: Double)] {
         interval.dateBinsGenerator(data).map { bin in
-            (bin.toRange(), data.reduce(0.0) { result, entry in
-                if bin.contains(entry.date) {
-                    return result + entry.value
-                } else {
-                    return result
-                }
-            })
+            (bin.toRange(),
+             function.function(data.filter { bin.contains($0.date) }.map(\.value)))
         }
     }
     
@@ -263,11 +250,9 @@ struct ExerciseChart : View {
     private var currentDateRange: Range<Date> {
         return scrollPosition.wrappedValue..<(scrollPosition.wrappedValue.addingTimeInterval(interval.length))
     }
-    
+    // TODO: rename
     private var visibleSum: Double {
-        visibleChartBars.reduce(0.0) { result, entry in
-            return result + entry.value
-        }
+        function.function(visibleChartBars.map(\.value))
     }
     
     @State private var yAxisValues: [Double]  = []
@@ -334,17 +319,15 @@ struct ExerciseChart : View {
     
     var selectedAmount: Double? {
         if let selectedBin {
-            return data.filter { selectedBin.contains(Calendar.current.startOfDay(for: $0.date)) }.reduce(0.0) { result, entry in
-                return result + entry.value
-            }
+            return function.function(data.filter { selectedBin.contains(Calendar.current.startOfDay(for: $0.date)) }.map(\.value))
+            
         } else if let selectedChartRange {
-            return data.reduce(0.0) { result, entry in
-                if selectedChartRange.contains(entry.date) {
-                    return result + entry.value
-                } else {
-                    return result
+            return function.function(
+                data.filter {
+                    selectedChartRange.contains($0.date)
                 }
-            }
+                    .map(\.value)
+            )
         }
         return nil
     }
@@ -357,7 +340,7 @@ struct ExerciseChart : View {
                 }
             }
             .pickerStyle(.segmented)
-            ExerciseChartHeader(title: "Total", value: visibleSum.formatted(), unit: "kg", range: currentDateRange)
+            ExerciseChartHeader(title: function.name, value: visibleSum.formatted(), unit: "kg", range: currentDateRange)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .opacity(selectedAmount != nil ? 0.0 : 1.0)
                 .accessibilityHidden(selectedAmount != nil)
@@ -365,10 +348,24 @@ struct ExerciseChart : View {
             
             Chart {
                 ForEach(chartBars, id: \.range.lowerBound) {range, value in
-                    BarMark(
-                        x: .value("Date", range.lowerBound, unit: interval.unit),
-                        y: .value("Volume", value)
-                    )
+                    if type == .bar {
+                        BarMark(
+                            x: .value("Date", range.lowerBound, unit: interval.unit),
+                            y: .value("Volume", value)
+                        )
+                    } else if type == .line {
+                        if value > 0 {
+                            LineMark(
+                                x: .value("Date", range.lowerBound, unit: interval.unit),
+                                y: .value("Volume", value)
+                            )
+                            PointMark(
+                                x: .value("Date", range.lowerBound, unit: interval.unit),
+                                y: .value("Volume", value)
+                            )
+                        }
+                    }
+                    
                 }
                 if let selectedBin {
                     ChartSelectionIndicator(value: selectedBin.midpoint)
@@ -439,13 +436,13 @@ struct ExerciseChart : View {
                     if let selectedBin {
                         let position = proxy.position(forX: selectedBin.midpoint)!
                         let x = position + origin.x
-                        SelectionHeader(containerWidth: geometry.size.width, x: x, sum: selectedAmount!, range: selectedBin, distanceFromChart: 10)
+                        SelectionHeader(containerWidth: geometry.size.width, x: x, sum: selectedAmount!, range: selectedBin, distanceFromChart: 10, functionName: function.name)
                     } else if let selectedChartRange {
                         let lower_position = proxy.position(forX: selectedRangeStart!.midpoint)!
                         let x1 = lower_position + origin.x
                         let upper_position = proxy.position(forX: selectedRangeEnd!.midpoint)!
                         let x2 = upper_position + origin.x
-                        SelectionHeader(containerWidth: geometry.size.width, x: x1, endX: x2, sum: selectedAmount!, range: selectedChartRange, distanceFromChart: 10)
+                        SelectionHeader(containerWidth: geometry.size.width, x: x1, endX: x2, sum: selectedAmount!, range: selectedChartRange, distanceFromChart: 10, functionName: function.name)
                     }
                 }
             }
@@ -460,18 +457,50 @@ struct ExerciseChart : View {
 }
 
 struct ExerciseChartView: View {
+    var title: String
+    var data: [ChartData]
+    var type: ChartType
+    var function: ChartFunction
     var body: some View {
         ScrollView {
-            ExerciseChart()
+            ExerciseChart(data: data, type: type, function: function)
         }
         .padding()
-        .navigationTitle("Volume")
+        .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
     }
 }
 
 #Preview {
+    let data: [ChartData] = [
+        .init(value: 250, date: Date()),
+        .init(value: 220, date: Date().addingTimeInterval(-86400)),
+        .init(value: 220, date: Date().addingTimeInterval(-86400 * 2)),
+        .init(value: 200, date: Date().addingTimeInterval(-86400 * 3)),
+        .init(value: 210, date: Date().addingTimeInterval(-86400 * 5)),
+        .init(value: 190, date: Date().addingTimeInterval(-86400 * 6)),
+        .init(value: 180, date: Date().addingTimeInterval(-86400 * 8)),
+        .init(value: 180, date: Date().addingTimeInterval(-86400 * 11)),
+        .init(value: 190, date: Date().addingTimeInterval(-86400 * 12)),
+        .init(value: 185, date: Date().addingTimeInterval(-86400 * 14)),
+        .init(value: 170, date: Date().addingTimeInterval(-86400 * 16)),
+        .init(value: 170, date: Date().addingTimeInterval(-86400 * 17)),
+        .init(value: 165, date: Date().addingTimeInterval(-86400 * 20)),
+        .init(value: 160, date: Date().addingTimeInterval(-86400 * 22)),
+        .init(value: 170, date: Date().addingTimeInterval(-86400 * 25)),
+        .init(value: 160, date: Date().addingTimeInterval(-86400 * 26)),
+        .init(value: 150, date: Date().addingTimeInterval(-86400 * 28)),
+        .init(value: 150, date: Date().addingTimeInterval(-86400 * 31)),
+        .init(value: 150, date: Date().addingTimeInterval(-86400 * 33)),
+        .init(value: 145, date: Date().addingTimeInterval(-86400 * 34)),
+        .init(value: 140, date: Date().addingTimeInterval(-86400 * 37)),
+        .init(value: 135, date: Date().addingTimeInterval(-86400 * 39)),
+        .init(value: 140, date: Date().addingTimeInterval(-86400 * 40)),
+        .init(value: 145, date: Date().addingTimeInterval(-86400 * 41)),
+        .init(value: 130, date: Date().addingTimeInterval(-86400 * 44)),
+        .init(value: 125, date: Date().addingTimeInterval(-86400 * 45)),
+    ]
     NavigationStack {
-        ExerciseChartView()
+        ExerciseChartView(title: "Volume", data: data, type: .bar, function: .sum)
     }
 }

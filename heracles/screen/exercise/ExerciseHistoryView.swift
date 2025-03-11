@@ -7,29 +7,49 @@
 
 import SwiftUI
 // TODO: this should link to workout when we implement workout view
+// TODO: improve visuals!!
 struct WorkoutExerciseView: View {
     var workoutExercise: WorkoutExercise
     
     var body: some View {
-        VStack(alignment: .leading) {
-            HStack {
-                Text(workoutExercise.workout!.name)
-                    .font(.headline)
-                Spacer()
-                Text(workoutExercise.workout!.date.formatted())
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.bottom, 5)
-            ForEach(workoutExercise.sets) { set in
+        ZStack {
+            VStack(alignment: .leading) {
                 HStack {
-                    Text("\(set.weight!.formatted()) kg × \(set.reps!)")
+                    Text(workoutExercise.workout!.name)
+                        .font(.body)
+                    Spacer()
+                    Text(workoutExercise.workout!.date.formatted(.dateTime))
+                        .font(.system(.caption2, design: .rounded))
+                        .foregroundStyle(Color(.secondaryLabel))
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(.tertiary)
+                        .fontWeight(.semibold)
+                        .imageScale(.small)
+                    
+                    
+                }
+                .padding(.bottom, 5)
+                ForEach(workoutExercise.sets) { set in
+                    HStack {
+                        Text("\(set.weight!.formatted()) kg × \(set.reps!)")
+                            .font(.subheadline)
+                        
+                    }
                 }
             }
-        }
-        .padding()
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+            .padding()
+            .background(.regularMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            
+            NavigationLink {
+                WorkoutView(workout: workoutExercise.workout!)
+            } label: {
+                EmptyView()
+
+            }
+            .opacity(0)
+            
+        }.listRowSeparator(.hidden)
     }
 }
 
@@ -67,12 +87,21 @@ struct ExerciseHistoryView: View {
             }
             
         }
+        .overlay {
+            if workoutExercises.isEmpty {
+                ContentUnavailableView {
+                    Label("No Logged Sets", systemImage: "archivebox")
+                } description: {
+                    Text("Exercise sets will appear here once you start logging them.")
+                }
+            }
+        }
         .listStyle(.plain)
     }
 }
 
 #Preview {
-    let exercise = Exercise(name: "Bench Press", type: .weight_reps, primaryMuscleGroup: .chest, secondaryMuscleGroups: [.triceps, .front_delts])
+    let exercise = Exercise(name: "Bench Press", type: .weight_reps, primaryMuscleGroup: .chest, secondaryMuscleGroups: [.triceps, .shoulders])
     
     let workout_exercises: [WorkoutExercise] = [
         .init(exercise: exercise, sets: [
