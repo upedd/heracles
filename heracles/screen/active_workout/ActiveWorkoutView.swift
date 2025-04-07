@@ -252,6 +252,8 @@ struct ActiveWorkoutView: View {
     @State private var showCancellationWarning = false
     @State private var showFinishWarning = false
     
+    @Query private var workoutExercises: [WorkoutExercise]
+    
     @Environment(\.modelContext) private var modelContext
     
     
@@ -337,7 +339,21 @@ struct ActiveWorkoutView: View {
                     .sheet(isPresented: $isAddingExercises) {
                         SelectExercisesView(onDone: { selected in
                             for exercise in selected {
-                                workout.exercises.append(WorkoutExercise(exercise: exercise))
+                                let workoutExercise = WorkoutExercise(exercise: exercise)
+                                // TODO: check
+                                let lastWorkoutExercise = workoutExercises.filter {
+                                    $0.exercise == exercise && $0.workout! != workout && !$0.workout!.active
+                                }.sorted {
+                                    $0.workout!.date > $1.workout!.date
+                                }.first
+                                
+                                if let lastWorkoutExercise {
+                                    for set in lastWorkoutExercise.sets {
+                                        workoutExercise.sets.append(WorkoutSet(reps: set.reps, weight: set.weight))
+                                    }
+                                }
+                                
+                                workout.exercises.append(workoutExercise)
                             }
                         })
                     }

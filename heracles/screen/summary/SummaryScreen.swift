@@ -9,7 +9,7 @@ import SwiftUI
 
 struct SummaryScreen: View {
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        ContentUnavailableView("Summary Screen", systemImage: "exclamationmark.triangle.fill", description: Text("Currently under construction."))
     }
 }
 

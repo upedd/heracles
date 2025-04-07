@@ -19,7 +19,7 @@ struct TableViewWrapper<Content: View, T>: UIViewControllerRepresentable {
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
-
+    
     func makeUIViewController(context: Context) -> UITableViewController {
         let tableViewController = UITableViewController()
         tableViewController.tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
@@ -28,30 +28,30 @@ struct TableViewWrapper<Content: View, T>: UIViewControllerRepresentable {
         tableViewController.tableView.allowsMultipleSelection = onSelect != nil
         return tableViewController
     }
-
+    
     func updateUIViewController(_ uiViewController: UITableViewController, context: Context) {
         uiViewController.tableView.reloadData()
     }
-
+    
     class Coordinator: NSObject, UITableViewDataSource, UITableViewDelegate {
         var parent: TableViewWrapper
-
+        
         init(_ parent: TableViewWrapper) {
             self.parent = parent
         }
-
+        
         func numberOfSections(in tableView: UITableView) -> Int {
             return parent.data.sections.count
         }
-
+        
         func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
             return parent.data.sections[section].title
         }
-
+        
         func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
             return parent.data.sections[section].items.count
         }
-
+        
         func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
             let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
             let item = parent.data.sections[indexPath.section].items[indexPath.row]
@@ -63,7 +63,7 @@ struct TableViewWrapper<Content: View, T>: UIViewControllerRepresentable {
             }
             return cell
         }
-
+        
         func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
             if let onSelect = parent.onSelect {
                 onSelect(parent.data.sections[indexPath.section].items[indexPath.row])
@@ -72,7 +72,7 @@ struct TableViewWrapper<Content: View, T>: UIViewControllerRepresentable {
         
         func sectionIndexTitles(for tableView: UITableView) -> [String]? {
             let titles = parent.data.sections.map { $0.title }
-            if titles.allSatisfy({$0.count == 1}) {
+            if titles.allSatisfy({$0.count == 1}) && !titles.isEmpty {
                 return titles
             }
             return nil
@@ -113,15 +113,32 @@ struct ExerciseFilterSheet : View {
                     dismiss()
                 }
             }.environment(\.editMode, $editMode)
-
+            
         }
-                
+        
+    }
+}
+
+extension Array where Element: Hashable {
+    func removingDuplicates() -> [Element] {
+        var addedDict = [Element: Bool]()
+        
+        return filter {
+            addedDict.updateValue(true, forKey: $0) == nil
+        }
+    }
+    
+    mutating func removeDuplicates() {
+        self = self.removingDuplicates()
     }
 }
 
 struct ExerciseList: View {
     var selectedGroup: MuscleGroup?
+    var recents: Bool = false
+    var customs: Bool = false
     @Query var exercises: [Exercise]
+    @Query var workouts: [Workout] // optimize in future!
     @State var searchText = ""
     @StateObject private var tableData = TableViewData<Exercise>() // Holds table data
     @State private var selectedEquipment: Set<Equipment> = .init( Equipment.allCases)
@@ -133,6 +150,18 @@ struct ExerciseList: View {
         Group {
             if exercises.isEmpty {
                 ProgressView()
+            } else if customs {
+                
+                ContentUnavailableView {
+                    Label("No Custom Exercises", systemImage: "archivebox")
+                } description: {
+                    Text("Exercises you create will appear here.")
+                } actions: {
+                    Button("Create Exercise") {
+                        // TODO: implement
+                    }
+                    .buttonStyle(.borderless)
+                }
             } else {
                 TableViewWrapper(data: tableData) { item in
                     NavigationLink {
@@ -171,27 +200,53 @@ struct ExerciseList: View {
                 .sheet(isPresented: $showFilters) {
                     ExerciseFilterSheet(selectedEquipment: $selectedEquipment, selectedMuscles: $selectedMuscles)
                 }
+                .overlay {
+                    if recents && tableData.sections.first != nil && tableData.sections.first!.items.isEmpty {
+                        ContentUnavailableView {
+                            Label("No Recent Exercises", systemImage: "archivebox")
+                        } description: {
+                            Text("Exercises you recently used will appear here.")
+                        }
+                    }
+                }
             }
         }
     }
-
+    
     private func updateGroupedExercises() {
+        if recents {
+            let filtered = workouts
+                .sorted {$0.date < $1.date}
+                .flatMap { $0.exercises }
+                .map { $0.exercise } // WorkoutExercise -> Exercise
+                .removingDuplicates()
+                .filter { exercise in
+                    searchText.isEmpty || exercise.name.localizedCaseInsensitiveContains(searchText)
+                }
+                .filter { exercise in
+                    selectedEquipment.contains(where: { equipment in
+                        exercise.equipment.contains(equipment)
+                    })
+                }
+            tableData.sections = [("", filtered)]
+            return
+        }
         let filtered = exercises.filter { exercise in
             if let selectedGroup {
                 return exercise.primaryMuscles.contains(where: { muscle in muscle_to_group[muscle] == selectedGroup })
             }
             return true
         }
-        .filter { exercise in
-            searchText.isEmpty || exercise.name.localizedCaseInsensitiveContains(searchText)
-        }
-        .filter { exercise in
-            selectedEquipment.contains(where: { equipment in
-                exercise.equipment.contains(equipment)
-            })
-        }
-        .sorted { $0.name < $1.name }
-
+            .filter { exercise in
+                searchText.isEmpty || exercise.name.localizedCaseInsensitiveContains(searchText)
+            }
+            .filter { exercise in
+                selectedEquipment.contains(where: { equipment in
+                    exercise.equipment.contains(equipment)
+                })
+            }
+            .sorted { $0.name < $1.name }
+        
         let dict = Dictionary(grouping: filtered, by: { String($0.name.prefix(1)) })
         let sorted = dict.sorted { $0.key < $1.key }.map { (title: $0.key, items: $0.value) }
         

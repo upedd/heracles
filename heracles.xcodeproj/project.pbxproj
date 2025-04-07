@@ -48,6 +48,7 @@
 		641EA5B62D5E6AC800F9F95D /* heracles.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = heracles.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		641EA5C82D5E6ACD00F9F95D /* heraclesTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = heraclesTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		641EA5D22D5E6ACD00F9F95D /* heraclesUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = heraclesUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		64A9FAF32D80DF3000EB87C5 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -106,6 +107,7 @@
 		641EA5AD2D5E6AC800F9F95D = {
 			isa = PBXGroup;
 			children = (
+				64A9FAF32D80DF3000EB87C5 /* README.md */,
 				641EA5B82D5E6AC800F9F95D /* heracles */,
 				641EA5CB2D5E6ACD00F9F95D /* heraclesTests */,
 				641EA5D52D5E6ACD00F9F95D /* heraclesUITests */,

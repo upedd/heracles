@@ -17,13 +17,7 @@ struct ContentView: View {
     @StateObject private var timerManager = TimerManager()
     
     var activeWorkout: Workout? {
-        let first = workouts.first
-        if let first {
-            if first.active {
-                return first
-            }
-        }
-        return nil
+        return workouts.filter { $0.active == true }.first
     }
     var body: some View {
         TabView {
@@ -66,7 +60,32 @@ struct ContentView: View {
         }
         .popup(isBarPresented: $isPopupBarPresented, isPopupOpen: $isPopupOpen) {
             if let activeWorkout {
-                ActiveWorkoutView(workout: activeWorkout, timerManager: timerManager).popupTitle("Active Workout", subtitle: timerManager.elapsedTime.formatted)
+                ActiveWorkoutView(workout: activeWorkout, timerManager: timerManager)
+                    .popupTitle(activeWorkout.name, subtitle: timerManager.elapsedTime.formatted)
+                    .popupBarItems(trailing: {
+                        Button {
+                            if timerManager.isRunning {
+                                timerManager.pause()
+                            } else {
+                                timerManager.start()
+                            }
+                            
+                        } label: {
+                            Image(systemName: timerManager.isRunning ? "pause.fill" : "play.fill")
+                        }
+                        .foregroundStyle(.white)
+                        
+                    })
+                //                    .popupBarItems {
+                //                        ToolbarItemGroup(placement: .popupBar) {
+                //                            Button {
+                //                                timerManager.pause()
+                //                            } label: {
+                //                                Image(systemName: "play.fill")
+                //                            }
+                //                        }
+                //                    }
+                
             }
         }
     }

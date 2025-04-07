@@ -6,8 +6,7 @@
 //
 
 import SwiftUI
-// TODO: this should link to workout when we implement workout view
-// TODO: improve visuals!!
+// TODO: visuals consistency
 struct WorkoutExerciseView: View {
     var workoutExercise: WorkoutExercise
     
@@ -73,7 +72,7 @@ struct ExerciseHistoryView: View {
     var workoutExercises: [WorkoutExercise]
     // performance!
     var groupedExercises: [String: [WorkoutExercise]] {
-        Dictionary(grouping: workoutExercises, by: {$0.workout!.date.formatted(.dateTime.month(.wide).year())})
+        Dictionary(grouping: workoutExercises.filter { !$0.workout!.active }, by: {$0.workout!.date.formatted(.dateTime.month(.wide).year())})
     }
     
     var body: some View {
@@ -88,7 +87,7 @@ struct ExerciseHistoryView: View {
             
         }
         .overlay {
-            if workoutExercises.isEmpty {
+            if groupedExercises.isEmpty {
                 ContentUnavailableView {
                     Label("No Logged Sets", systemImage: "archivebox")
                 } description: {

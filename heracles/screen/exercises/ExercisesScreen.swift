@@ -8,10 +8,8 @@
 import SwiftUI
 import SwiftData
 
-// TODO: visual tweaks
-// TODO: add search bar
-// TODO: custom exercises
-// TODO: recent exercises
+// TODO: add search bar to main screen
+// TODO: hiding exercises?
 
 struct ExercisesScreen: View {
     var body: some View {
@@ -27,17 +25,16 @@ struct ExercisesScreen: View {
                         Label("All", systemImage: "list.bullet")
                     }
                     NavigationLink {
-                        ExerciseList(selectedGroup: nil)
+                        ExerciseList(selectedGroup: nil, recents: true)
                             .navigationTitle("Recent Exercises")
                     } label: {
                         
                         Label("Recent", systemImage: "clock")
                     }
                     NavigationLink {
-                        ExerciseList(selectedGroup: nil)
+                        ExerciseList(selectedGroup: nil, customs: true)
                             .navigationTitle("Custom Exercises")
                     } label: {
-                        
                         Label("Custom", systemImage: "star")
                     }
                 }
@@ -48,11 +45,13 @@ struct ExercisesScreen: View {
                             ExerciseList(selectedGroup: group)
                                 .navigationTitle("\(group.rawValue.capitalized) Exercises")
                         } label: {
-                            
-                            Image(systemName: "circle.fill")
-                                .foregroundColor(muscle_group_colors[group])
-                                .imageScale(.small)
-                            Text(group.rawValue.capitalized)
+                            Label {
+                                Text(group.rawValue.capitalized)
+                            } icon: {
+                                Image(systemName: "circle.fill")
+                                    .foregroundColor(muscle_group_colors[group])
+                                    .imageScale(.medium)
+                            }
                         }
                     }
                 }
@@ -64,10 +63,13 @@ struct ExercisesScreen: View {
 }
 
 #Preview {
-    ExercisesScreen().modelContainer(for: Exercise.self, inMemory: true) { result in
+    ExercisesScreen().modelContainer(for: Workout.self, inMemory: true) { result in
         do {
             let container = try result.get()
             preloadExercises(container)
+            for i in 0..<100 {
+                container.mainContext.insert(Workout.sample)
+            }
         } catch {
             print("Failed to create model container.")
         }

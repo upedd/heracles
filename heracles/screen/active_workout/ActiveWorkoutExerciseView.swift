@@ -11,6 +11,7 @@ import SwiftData
 
 // TODO: cleanup
 // FIXME: weird animation on donekeyboardbutton
+// TODO: keyboard suggestions for weight and reps!
 
 struct KeyboardButtonStyle: ButtonStyle {
     var secondary = false
@@ -103,7 +104,15 @@ struct ActiveWorkoutExerciseView: View {
         
         private var weightText: Binding<String> {
             Binding {
-                ActiveWorkoutExerciseView.SetRow.formatter.string(from: NSNumber(value: set.weight!)) ?? "0"
+                if let weight = set.weight {
+                    if weight == 0 {
+                        return "0"
+                    } else {
+                        return ActiveWorkoutExerciseView.SetRow.formatter.string(from: NSNumber(value: weight)) ?? "0"
+                    }
+                } else {
+                    return "0"
+                }
             } set: { newValue in
                 set.weight = Double(newValue) ?? 0
             }
@@ -114,7 +123,7 @@ struct ActiveWorkoutExerciseView: View {
         
         private var setText: Binding<String> {
             Binding {
-                "\(set.reps!)"
+                set.reps != nil ? "\(set.reps!)" : ""
             } set: { newValue in
                 set.reps = Int(newValue) ?? 0
             }
@@ -460,10 +469,17 @@ struct ActiveWorkoutExerciseView: View {
     }
     
     struct AddSetButton : View {
+        
         @Bindable var exercise: WorkoutExercise
+        
         var body: some View {
             Button {
-                exercise.sets.append(.init(reps: 0, weight: 0))
+                if let last = exercise.sets.last {
+                    exercise.sets.append(.init(reps: last.reps, weight: last.weight))
+                } else {
+                    exercise.sets.append(.init(reps: 0, weight: 0))
+                }
+
             } label: {
                 HStack(alignment: .center) {
                     Image(systemName: "plus")
@@ -480,6 +496,7 @@ struct ActiveWorkoutExerciseView: View {
         }
     }
     
+    // design: should link to workout?
     struct RecentsItem: View {
         var exercise: WorkoutExercise
         
@@ -514,7 +531,7 @@ struct ActiveWorkoutExerciseView: View {
     @Query var workoutExercises: [WorkoutExercise]
     var currentExerciseWorkoutExercises: [WorkoutExercise] {
         workoutExercises.filter {
-            $0.exercise == exercise.exercise
+            $0.exercise == exercise.exercise && $0.workout! != exercise.workout! && !$0.workout!.active
         }
     }
     
@@ -548,7 +565,7 @@ struct ActiveWorkoutExerciseView: View {
                     AddSetButton(exercise: exercise)
                 }
             }
-            if !currentExerciseWorkoutExercises.isEmpty {
+            if !currentExerciseWorkoutExercises.isEmpty && active {
                 Section("Recents") {
                     ForEach(currentExerciseWorkoutExercises.prefix(5)) { w in
                         RecentsItem(exercise: w)
@@ -645,6 +662,8 @@ struct ActiveWorkoutExerciseView: View {
             .init(reps: 6, weight: 70)
         ]),
     ]
+    
+    workout_exercise.workout = Workout(date: Date())
     
     for workout_exercise in workout_exercises {
         workout_exercise.workout = Workout(date: Date())

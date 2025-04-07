@@ -41,6 +41,7 @@ struct WorkoutScreen: View {
         modelContext.insert(workout)
         timerManager.reset()
         timerManager.start()
+        workout.name = "Workout" // TODO(polish): better default names for workouts, we should be constructing those names based on the time of the day and muscle groups of exercises. Examples: Morning Push Workout, Evening Full Body Workout, Afternoon Arms Workout
         isPopupOpen = true
     }
 }

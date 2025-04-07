@@ -78,7 +78,7 @@ struct HistoryScreen: View {
     @Query(sort: \Workout.date, order: .reverse) private var workouts: [Workout]
     @Environment(\.modelContext) private var modelContext
     var groupedWorkouts: [Date: [Workout]] {
-        Dictionary(grouping: workouts, by: {
+        Dictionary(grouping: workouts.filter {!$0.active}, by: {
             let components = Calendar.current.dateComponents([.month, .year], from: $0.date)
             return Calendar.current.date(from: components)!
         })
@@ -95,7 +95,7 @@ struct HistoryScreen: View {
     private var selectedDateWorkouts: [Workout]? {
             if let selectedDate {
                 return workouts.filter {
-                    Calendar.current.isDate($0.date, inSameDayAs: selectedDate)
+                    !$0.active && Calendar.current.isDate($0.date, inSameDayAs: selectedDate)
                 }
             }
             return nil

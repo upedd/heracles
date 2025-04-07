@@ -97,8 +97,6 @@ struct WorkoutIconView : View {
 // TODO: more statistics about muscles
 // TODO: tweak visuals
 
-// TODO: PRIMARY: exercise editing!
-
 struct WorkoutExerciseLink : View {
     var exercise: WorkoutExercise
     
