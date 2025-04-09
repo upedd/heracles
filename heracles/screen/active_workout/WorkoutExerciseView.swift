@@ -178,6 +178,10 @@ extension CustomKeyboard {
         static let incOrDecPublisher: PassthroughSubject<Int, Never> = .init()
     }
     
+    class OpenRPENotifer {
+        static let openRPEPublisher: PassthroughSubject<Void, Never> = .init()
+    }
+    
     static let distanceKeyboard = CustomKeyboardBuilder { textDocumentProxy, onSubmit, playSystemFeedback in
         VStack {
             HStack {
@@ -334,9 +338,10 @@ extension CustomKeyboard {
                 // TODO: add weight calculator
                 // TODO: rpe!
                 Button {
+                    OpenRPENotifer.openRPEPublisher.send()
                     playSystemFeedback?()
                 } label: {
-                    Label("dumbbell", systemImage: "dumbbell")
+                    Text("RPE")
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(KeyboardButtonStyle(secondary: true))
@@ -624,6 +629,8 @@ struct WorkoutExerciseSetView : View  {
         
     }
     
+    @State private var showRPEPicker = false
+    
     var body: some View {
         HStack(alignment: .center) {
             WorkoutExerciseSetIndex(set: set, idx: idx, active: active)
@@ -733,7 +740,26 @@ struct WorkoutExerciseSetView : View  {
                                     repsTextSelection = .init(range: repsText.wrappedValue.startIndex..<repsText.wrappedValue.endIndex)
                                 }
                             }
-                        Text("reps")
+                            .onReceive(CustomKeyboard.OpenRPENotifer.openRPEPublisher) {
+                                if focusedField == WorkoutExerciseFocusState(setIdx: rawIdx, fieldIdx: .reps) {
+                                    showRPEPicker = true
+                                    set.RPE = 8.5
+                                }
+                            }
+                    }
+                    if set.RPE != nil {
+                        Text("RPE")
+                        Button {
+                            showRPEPicker = true
+                        } label: {
+                            Text(rpe_to_display[set.RPE!]!)
+                                .foregroundStyle(Color.primary)
+                        }
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 3)
+                        .background(Material.regular)
+                        .clipShape(RoundedRectangle(cornerRadius: 5))
+                        .buttonStyle(.borderless)
                     }
                 } else {
                     Text(set.formatted)
@@ -741,6 +767,62 @@ struct WorkoutExerciseSetView : View  {
                 }
             }
             .opacity(active && set.completed ? 0.5 : 1)
+        }
+        .sheet(isPresented: $showRPEPicker) {
+            NavigationStack {
+                VStack(alignment: .center) {
+                    Picker("RPE", selection: $set.RPE) {
+                        Text("10").tag(10.0)
+                        Text("9.5").tag(9.5)
+                        Text("9").tag(9.0)
+                        Text("8.5").tag(8.5)
+                        Text("8").tag(8.0)
+                        Text("7.5").tag(7.5)
+                        Text("7").tag(7.0)
+                        Text("6.5").tag(6.5)
+                    }
+                    .pickerStyle(.wheel)
+                    if set.RPE != nil {
+                        Text(rpe_to_descriptions[set.RPE!]!.0)
+                            .font(.title3.bold())
+                            .padding(.bottom, 5)
+                        Text(rpe_to_descriptions[set.RPE!]!.1)
+                            .multilineTextAlignment(.center)
+                            .font(.body)
+                    }
+                }
+                .padding()
+                    .navigationTitle("Chosen RPE")
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button {
+                                showRPEPicker = false
+                                set.RPE = nil
+                            } label: {
+                                Text("Clear")
+                            }
+                        }
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button {
+                                showRPEPicker = false
+                            } label: {
+                                Label("Close", systemImage: "xmark")
+                                    .imageScale(.medium)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(Color.secondary)
+                            }
+                            .padding(.all, 8)
+                            .buttonStyle(.borderless)
+                            .background(Material.regular)
+                            .labelStyle(.iconOnly)
+                            .clipShape(Circle())
+                        }
+                    }
+                    .toolbarTitleDisplayMode(.inline)
+                    .presentationDetents([.fraction(0.55)])
+                                
+            }
+            
         }
         .padding(.vertical, 2)
         .font(.system(.body, design: .rounded, weight: .medium))
@@ -930,10 +1012,10 @@ struct WorkoutExerciseView: View {
         ExerciseNote(text: "Don't flare your elbows out"),
         ExerciseNote(text: "Use a spotter for heavy weights")
     ]
-    exercise.trackWeight = false
-    exercise.trackTime = true
-    exercise.trackDuration = true
-    exercise.trackReps = false
+//    exercise.trackWeight = false
+//    exercise.trackTime = true
+//    exercise.trackDuration = true
+//    exercise.trackReps = false
     
     exercise.video = "https://www.youtube.com/watch?v=U5zrloYWwxw"
     

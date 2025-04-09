@@ -318,12 +318,35 @@ extension Exercise {
     }
 }
 
+let rpe_to_descriptions = [
+    10.0: ("Maximal effort", "No reserve remaining. Unsustainable. Inability to continue beyond current exertion."),
+    9.5: ("Near-maximal effort"," Almost no reserve. Only a brief continuation is possible."),
+    9.0: ("Extremely hard", "Requires maximal focus. Sustainable only for very short durations."),
+    8.5: ("Very high effort", "Strong fatigue present. Difficult to speak. Short-term maintenance possible."),
+    8.0: ("Hard effort", "Sustainable for several minutes. Breathing is labored. Talking is limited."),
+    7.5: ("Moderately hard", "Requires concentration. Noticeable fatigue. Speech limited to short phrases."),
+    7.0: ("Steady, challenging effort", "Controlled breathing. Can speak in sentences. Sustainable with effort."),
+    6.5: ("Moderate effort", "Breathing slightly elevated. Comfortable yet purposeful pace. Sustainable over time.")
+]
+
+let rpe_to_display = [
+    10: "10",
+    9.5: "9.5",
+    9: "9",
+    8.5: "8.5",
+    8: "8",
+    7.5: "7.5",
+    7: "7",
+    6.5: "6.5",
+]
+
 @Model
 final class WorkoutSet {
     var reps: Int?
     var weight: Double?
     var time: TimeInterval?
     var distance: Double?
+    var RPE: Double? = nil
     var completed = false
     var type = SetType.working
     
@@ -352,7 +375,10 @@ final class WorkoutSet {
         }
         
         if let reps {
-            output += "× \(reps)"
+            output += "× \(reps) "
+        }
+        if let RPE {
+            output += "RPE \(rpe_to_display[RPE]!)"
         }
         return output
     }

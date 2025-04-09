@@ -161,9 +161,15 @@ struct ExerciseChartsCardView : View {
     var estimated1RMData: [ChartData] {
         filteredWorkoutExercises
             .map {
-                let bestSet = $0.sets.max { $0.weight! < $1.weight! }
+                let maxRPE = $0.sets.map {
+                    if let rpe = $0.RPE {
+                        oneRepMax(reps: $0.reps!, weight: $0.weight!, rpe: rpe)
+                    } else {
+                        oneRepMax(reps: $0.reps!, weight: $0.weight!)
+                    }
+                }.max()!
                 return ChartData(
-                    value: oneRepMax(reps: bestSet!.reps!, weight: bestSet!.weight!).rounded(), // TODO: better rounding!
+                    value: maxRPE.rounded(), // TODO: better rounding!
                     date: $0.workout!.date
                 )
             }
