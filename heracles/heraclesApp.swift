@@ -16,7 +16,7 @@ import SwiftData
             guard existingExercises == 0 else { return }
 
             // Load and decode the JSON.
-            guard let url = Bundle.main.url(forResource: "minified-exercises", withExtension: "json") else {
+            guard let url = Bundle.main.url(forResource: "exercises", withExtension: "json") else {
                 fatalError("Failed to find exercises.json")
             }
         

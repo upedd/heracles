@@ -183,6 +183,10 @@ class Exercise: Codable {
         case video
         case equipment
         case images
+        case track_reps
+        case track_weight
+        case track_time
+        case track_distance
     }
     // TODO: get more data!
     
@@ -223,6 +227,11 @@ class Exercise: Codable {
     var instructions: [String] = []
     var video: String? = nil
     var images: [String]? = nil
+    var trackReps = true
+    var trackWeight = true
+    var trackDuration = false
+    var trackTime = false
+    
     
     @Relationship(deleteRule: .cascade) var pinnedNotes: [ExerciseNote] = []
     var hidden = false // Hidden exercises are not shown in the exercises list, we use it instead of deleting exercises in case they are used in a workout
@@ -247,7 +256,10 @@ class Exercise: Codable {
         self.equipment = equipment.map { equipment_name[$0] ?? nil }.compactMap { $0 }
         self.video = try container.decodeIfPresent(String.self, forKey: .video)
         self.images = try container.decodeIfPresent([String].self, forKey: .images)
-        
+        self.trackReps = try container.decodeIfPresent(Bool.self, forKey: .track_reps) ?? true
+        self.trackWeight = try container.decodeIfPresent(Bool.self, forKey: .track_weight) ?? true
+        self.trackDuration = try container.decodeIfPresent(Bool.self, forKey: .track_time) ?? false
+        self.trackTime = try container.decodeIfPresent(Bool.self, forKey: .track_distance) ?? false
     }
     
     func encode(to encoder: Encoder) throws {
@@ -283,25 +295,74 @@ enum SetType : String, CaseIterable, Codable {
     case cooldown = "Cooldown"
 }
 
+extension Exercise {
+    // Order matters here, should be the same as WorkoutExerciseSet fields order
+    var fields: [WorkoutExerciseSetField] {
+        var fields: [WorkoutExerciseSetField] = []
+        
+        if trackTime {
+            fields.append(.distance)
+        }
+        if trackWeight {
+            fields.append(.weight)
+        }
+        if trackDuration {
+            fields.append(.minutes)
+            fields.append(.seconds)
+        }
+        if trackReps {
+            fields.append(.reps)
+        }
+        return fields
+        
+    }
+}
+
 @Model
 final class WorkoutSet {
     var reps: Int?
     var weight: Double?
     var time: TimeInterval?
+    var distance: Double?
     var completed = false
     var type = SetType.working
     
-    init(reps: Int? = nil, weight: Double? = nil, time: TimeInterval? = nil) {
+    init(reps: Int? = nil, weight: Double? = nil, time: TimeInterval? = nil, distance: Double? = nil) {
         self.reps = reps
         self.weight = weight
         self.time = time
+        self.distance = distance
     }
-    
+    var formatted: String {
+        // TODO: better formatting!
+        // f.e. for running intervals https://www.newintervaltraining.com/iaaf-standardised-sessions-www-newintervaltraining-com.pdf
+        
+        var output = ""
+        if let distance {
+            output += "\(distance.formatted()) km "
+        }
+        if let time {
+            let minutes = Int(time) / 60
+            let seconds = Int(time) % 60
+            output += "\(minutes):\(seconds) "
+        }
+        
+        if let weight {
+            output += "\(weight.formatted()) kg "
+        }
+        
+        if let reps {
+            output += "× \(reps)"
+        }
+        return output
+    }
     
     static var sample: WorkoutSet {
         return WorkoutSet(reps: Int.random(in: 4...15), weight: Double(Int.random(in: 2...12)) * 10.0)
     }
 }
+
+
 @Model
 final class WorkoutExercise {
     var exercise: Exercise

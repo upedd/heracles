@@ -314,7 +314,7 @@ struct ActiveWorkoutView: View {
                 Section {
                     ForEach(workout.exercises) { exercise in
                         NavigationLink {
-                            ActiveWorkoutExerciseView(exercise: exercise, active: true)
+                            WorkoutExerciseView(exercise: exercise, active: true)
                         } label: {
                             HStack {
                                 Text(exercise.exercise.name)
@@ -349,7 +349,7 @@ struct ActiveWorkoutView: View {
                                 
                                 if let lastWorkoutExercise {
                                     for set in lastWorkoutExercise.sets {
-                                        workoutExercise.sets.append(WorkoutSet(reps: set.reps, weight: set.weight))
+                                        workoutExercise.sets.append(WorkoutSet(reps: set.reps, weight: set.weight, time: set.time, distance: set.distance))
                                     }
                                 }
                                 

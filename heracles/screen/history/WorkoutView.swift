@@ -96,19 +96,19 @@ struct WorkoutIconView : View {
 
 // TODO: more statistics about muscles
 // TODO: tweak visuals
-
-struct WorkoutExerciseLink : View {
+// TODO: name!!!!?!?!
+struct WorkoutExerciseLinkLink : View {
     var exercise: WorkoutExercise
     
     var body : some View {
         NavigationLink {
-            ActiveWorkoutExerciseView(exercise: exercise, active: false)
+            WorkoutExerciseView(exercise: exercise, active: false)
         } label: {
             VStack(alignment: .leading) {
                 Text(exercise.exercise.name)
                     .font(.body)
                 ForEach(exercise.sets) { set in
-                    Text("\(set.reps!) × \(set.weight!.formatted())kg")
+                    Text(set.formatted)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -158,6 +158,7 @@ struct WorkoutView: View {
                 .listRowSeparator(.hidden)
                 Section {
                     HStack {
+                        // TODO: more statistics depending on exercises types!
                         VStack(alignment: .leading) {
                             Text("Workout Time")
                                 .font(.body)
@@ -168,7 +169,7 @@ struct WorkoutView: View {
                         VStack(alignment: .leading) {
                             Text("Total Volume")
                                 .font(.body)
-                            Text("400kg")
+                            Text("400kg") // TODO: calculate
                                 .font(.system(.title, design: .rounded))
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -194,7 +195,7 @@ struct WorkoutView: View {
                 
                 Section {
                     ForEach(workout.exercises) { exercise in
-                        WorkoutExerciseLink(exercise: exercise)
+                        WorkoutExerciseLinkLink(exercise: exercise)
                     }
                 } header: {
                     Text("Exercises")

@@ -59,7 +59,7 @@ struct WorkoutEditorView: View {
             
             Section {
                 ForEach(workout.exercises) { exercise in
-                    WorkoutExerciseLink(exercise: exercise)
+                    WorkoutExerciseLink(workoutExercise: exercise)
                 }
                 .onDelete { indexSet in
                     workout.exercises.remove(atOffsets: indexSet)

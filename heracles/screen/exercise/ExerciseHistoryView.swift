@@ -7,7 +7,7 @@
 
 import SwiftUI
 // TODO: visuals consistency
-struct WorkoutExerciseView: View {
+struct WorkoutExerciseLink : View {
     var workoutExercise: WorkoutExercise
     
     var body: some View {
@@ -30,7 +30,7 @@ struct WorkoutExerciseView: View {
                 .padding(.bottom, 5)
                 ForEach(workoutExercise.sets) { set in
                     HStack {
-                        Text("\(set.weight!.formatted()) kg × \(set.reps!)")
+                        Text(set.formatted)
                             .font(.subheadline)
                         
                     }
@@ -79,7 +79,7 @@ struct ExerciseHistoryView: View {
         List(Array(groupedExercises.keys), id: \.self) { group in
             Section {
                 ForEach(groupedExercises[group]!) { workoutExercise in
-                    WorkoutExerciseView(workoutExercise: workoutExercise)
+                    WorkoutExerciseLink(workoutExercise: workoutExercise)
                 }
             } header: {
                 ExerciseHistorySectionHeaderView(title: group)

@@ -171,7 +171,13 @@ struct ExerciseChartsCardView : View {
     
     var body: some View {
         ScrollView {
-            if !filteredWorkoutExercises.isEmpty {
+            if !exercise.trackReps ||  !exercise.trackWeight {
+                ContentUnavailableView {
+                    Label("No Charts", systemImage: "archivebox")
+                } description: {
+                    Text("Charts for this type of exercise are currently unavailable.")
+                }
+            } else if !filteredWorkoutExercises.isEmpty {
                 VStack(spacing: 10) {
                     ChartCard(title: "Volume", data: volumeData, unit: "kg", type: .bar, function: .sum)
                     ChartCard(title: "Estimated 1RM", data: estimated1RMData, unit: "kg", type: .line, function: .max)
