@@ -47,5 +47,5 @@ struct WorkoutScreen: View {
 }
 
 #Preview {
-    WorkoutScreen(isPopupOpen: .constant(false), timerManager: TimerManager())
+    WorkoutScreen(isPopupOpen: .constant(false), timerManager: .make(id: "preview"))
 }

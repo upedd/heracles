@@ -9,12 +9,16 @@ import SwiftUI
 import SwiftData
 import LNPopupUI
 
+//extension EnvironmentValues {
+//    @Entry var stopwatchTimerManager: TimerManager = TimerManager.make(id: "workout")
+//}
+
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var isPopupBarPresented = true
     @State private var isPopupOpen = false
     @Query private var workouts: [Workout]
-    @StateObject private var timerManager = TimerManager()
+    @StateObject private var timerManager = TimerManager.make(id: "workout")
     
     var activeWorkout: Workout? {
         return workouts.filter { $0.active == true }.first
@@ -42,6 +46,7 @@ struct ContentView: View {
                     Label("Exercises", systemImage: "books.vertical")
                 }
         }
+            
         .onChange(of: activeWorkout, {
             if activeWorkout != nil {
                 isPopupBarPresented = true

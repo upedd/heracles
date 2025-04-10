@@ -389,7 +389,7 @@ struct ActiveWorkoutView: View {
 
 #Preview {
     let workout = Workout();
-    ActiveWorkoutView(workout: workout, timerManager: TimerManager())
+    ActiveWorkoutView(workout: workout, timerManager: .make(id: "preview"))
         .modelContainer(for: Exercise.self, inMemory: true) { result in
             do {
                 let container = try result.get()

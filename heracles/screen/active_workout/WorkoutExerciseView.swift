@@ -182,6 +182,10 @@ extension CustomKeyboard {
         static let openRPEPublisher: PassthroughSubject<Void, Never> = .init()
     }
     
+    class OpenStopwatchNotifier {
+        static let openStopwatchPublisher: PassthroughSubject<Void, Never> = .init()
+    }
+    
     static let distanceKeyboard = CustomKeyboardBuilder { textDocumentProxy, onSubmit, playSystemFeedback in
         VStack {
             HStack {
@@ -417,8 +421,9 @@ extension CustomKeyboard {
                 // TODO: rpe!
                 Button {
                     playSystemFeedback?()
+                    OpenStopwatchNotifier.openStopwatchPublisher.send()
                 } label: {
-                    Label("timer", systemImage: "timer")
+                    Label("stopwatch", systemImage: "stopwatch")
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(KeyboardButtonStyle(secondary: true))
@@ -498,6 +503,7 @@ struct WorkoutExerciseSetView : View  {
     // MESS!!!
     var rawIdx: Int
     @FocusState.Binding var focusedField: WorkoutExerciseFocusState?
+    @ObservedObject var stopwatchTimerManager: TimerManager
     
     @Environment(\.editMode) var editMode
     
@@ -547,7 +553,7 @@ struct WorkoutExerciseSetView : View  {
             if exercise.exercise.trackDuration {
                 set.distance = Double(newValue) ?? 0
             }
-
+            
         }
     }
     
@@ -630,7 +636,7 @@ struct WorkoutExerciseSetView : View  {
     }
     
     @State private var showRPEPicker = false
-    
+    @State private var showStopwatch = false
     var body: some View {
         HStack(alignment: .center) {
             WorkoutExerciseSetIndex(set: set, idx: idx, active: active)
@@ -692,7 +698,14 @@ struct WorkoutExerciseSetView : View  {
                                         minutesTextSelection = .init(range: minutesText.wrappedValue.startIndex..<minutesText.wrappedValue.endIndex)
                                     }
                                 }
-
+                                .onReceive(CustomKeyboard.OpenStopwatchNotifier.openStopwatchPublisher) {
+                                    if focusedField == WorkoutExerciseFocusState(setIdx: rawIdx, fieldIdx: .minutes) {
+                                        showStopwatch = true
+                                        stopwatchTimerManager.reset()
+                                        stopwatchTimerManager.elapsedTime = set.time ?? 0
+                                    }
+                                }
+                            
                             Spacer()
                             Text(":")
                             Spacer()
@@ -716,6 +729,13 @@ struct WorkoutExerciseSetView : View  {
                                         secondsTextSelection = .init(range: secondsText.wrappedValue.startIndex..<secondsText.wrappedValue.endIndex)
                                     }
                                 }
+                                .onReceive(CustomKeyboard.OpenStopwatchNotifier.openStopwatchPublisher) {
+                                    if focusedField == WorkoutExerciseFocusState(setIdx: rawIdx, fieldIdx: .seconds) {
+                                        showStopwatch = true
+                                        stopwatchTimerManager.reset()
+                                        stopwatchTimerManager.elapsedTime = set.time ?? 0
+                                    }
+                                }
                         }
                         
                         .frame(width: 50)
@@ -723,7 +743,7 @@ struct WorkoutExerciseSetView : View  {
                         .padding(.vertical, 3)
                         .background(Material.regular)
                         .clipShape(RoundedRectangle(cornerRadius: 5))
-                            
+                        
                     }
                     if exercise.exercise.trackReps {
                         Text("×")
@@ -792,43 +812,133 @@ struct WorkoutExerciseSetView : View  {
                     }
                 }
                 .padding()
-                    .navigationTitle("Chosen RPE")
-                    .toolbar {
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button {
-                                showRPEPicker = false
-                                set.RPE = nil
-                            } label: {
-                                Text("Clear")
-                            }
-                        }
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button {
-                                showRPEPicker = false
-                            } label: {
-                                Label("Close", systemImage: "xmark")
-                                    .imageScale(.medium)
-                                    .fontWeight(.bold)
-                                    .foregroundStyle(Color.secondary)
-                            }
-                            .padding(.all, 8)
-                            .buttonStyle(.borderless)
-                            .background(Material.regular)
-                            .labelStyle(.iconOnly)
-                            .clipShape(Circle())
+                .navigationTitle("Chosen RPE")
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            showRPEPicker = false
+                            set.RPE = nil
+                        } label: {
+                            Text("Clear")
                         }
                     }
-                    .toolbarTitleDisplayMode(.inline)
-                    .presentationDetents([.fraction(0.55)])
-                                
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            showRPEPicker = false
+                        } label: {
+                            Label("Close", systemImage: "xmark")
+                                .imageScale(.medium)
+                                .fontWeight(.bold)
+                                .foregroundStyle(Color.secondary)
+                        }
+                        .padding(.all, 8)
+                        .buttonStyle(.borderless)
+                        .background(Material.regular)
+                        .labelStyle(.iconOnly)
+                        .clipShape(Circle())
+                    }
+                }
+                .toolbarTitleDisplayMode(.inline)
+                .presentationDetents([.fraction(0.55)])
+                
             }
             
+        }
+        
+        .sheet(isPresented: $showStopwatch, onDismiss: {
+            stopwatchTimerManager.pause()
+        }) {
+            NavigationStack {
+                VStack {
+                    if stopwatchTimerManager.isRunning {
+                        Text(TimeDataSource<Date>.currentDate, format: .stopwatch(startingAt: .now.addingTimeInterval(-stopwatchTimerManager.elapsedTime)))
+                            .font(.system(size: 90, weight: .thin))
+                            .padding(.top, 10)
+                    } else {
+                        Text(Date.now, format: .stopwatch(startingAt: .now.addingTimeInterval(-stopwatchTimerManager.elapsedTime)))
+                            .font(.system(size: 90, weight: .thin))
+                            .padding(.top, 10)
+                        
+                    }
+                    HStack {
+                        Button("Reset") {
+                            stopwatchTimerManager.reset()
+                        }
+                        .frame(width: 90, height: 90)
+                        .foregroundStyle(Color.primary)
+                        .background(Material.regular)
+                        .clipShape(Circle())
+                        
+                        Spacer()
+                        Button {
+                            if stopwatchTimerManager.isRunning {
+                                stopwatchTimerManager.pause()
+                            } else {
+                                stopwatchTimerManager.start()
+                            }
+                            
+                        } label: {
+                            ZStack {
+                                Color(uiColor: .systemBackground)
+                                    .frame(width: 90, height: 90)
+                                Text(stopwatchTimerManager.isRunning ? "Pause" : "Start")
+                                
+                                    .foregroundStyle(Color.primary)
+                                    .frame(width: 90, height: 90)
+                                    .background(Material.regular)
+                                
+                                if stopwatchTimerManager.isRunning {
+                                    Color.red.blendMode(.multiply)
+                                        .frame(width: 90, height: 90)
+                                    
+                                } else {
+                                    Color.green.blendMode(.multiply)
+                                        .frame(width: 90, height: 90)
+                                }
+                            }
+                            .transaction { transaction in
+                                transaction.animation = nil
+                            }
+                            .clipShape(Circle())
+                            
+                            
+                        }
+                        
+                        
+                        
+                    }
+                }
+                .padding()
+                .navigationTitle("Stopwatch")
+                .toolbar {
+                    
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            stopwatchTimerManager.pause()
+                            showStopwatch = false
+                        } label: {
+                            Label("Close", systemImage: "xmark")
+                                .imageScale(.medium)
+                                .fontWeight(.bold)
+                                .foregroundStyle(Color.secondary)
+                        }
+                        .padding(.all, 8)
+                        .buttonStyle(.borderless)
+                        .background(Material.regular)
+                        .labelStyle(.iconOnly)
+                        .clipShape(Circle())
+                    }
+                }
+                .toolbarTitleDisplayMode(.inline)
+                .presentationDetents([.fraction(0.55)])
+            }
         }
         .padding(.vertical, 2)
         .font(.system(.body, design: .rounded, weight: .medium))
         .alignmentGuide(.listRowSeparatorLeading) { _ in
             40
         }
+        
     }
 }
 
@@ -849,6 +959,7 @@ struct WorkoutExerciseView: View {
     struct AddSetButton : View {
         
         @Bindable var exercise: WorkoutExercise
+        
         
         var body: some View {
             Button {
@@ -919,7 +1030,7 @@ struct WorkoutExerciseView: View {
     @State var activeState: Bool = false
     
     @FocusState var focusedField: WorkoutExerciseFocusState?
-    
+    @ObservedObject var stopwatchTimerManager = TimerManager.make(id: "stopwatch")
     var body: some View {
         List {
             //            Section("Pinned notes") {
@@ -931,7 +1042,8 @@ struct WorkoutExerciseView: View {
             Section("Sets") {
                 // MESS!!!
                 ForEach(Array(setsWithIdx.enumerated()), id: \.element.0) { rawIdx, element in
-                    WorkoutExerciseSetView(set: element.0, exercise: exercise, idx: element.1, active: activeState, rawIdx: rawIdx, focusedField: $focusedField)
+                    WorkoutExerciseSetView(set: element.0, exercise: exercise, idx: element.1, active: activeState, rawIdx: rawIdx, focusedField: $focusedField, stopwatchTimerManager: stopwatchTimerManager)
+                    
                 }
                 .onDelete(perform: { indexSet in
                     exercise.sets.remove(atOffsets: indexSet)
@@ -954,6 +1066,11 @@ struct WorkoutExerciseView: View {
         }
         .onAppear {
             activeState = active
+        }
+        .onChange(of: stopwatchTimerManager.elapsedTime) {
+            if let focusedField {
+                exercise.sets[focusedField.setIdx].time = stopwatchTimerManager.elapsedTime
+            }
         }
         .sheet(isPresented: $showInfoSheet) {
             NavigationStack {
@@ -1012,10 +1129,10 @@ struct WorkoutExerciseView: View {
         ExerciseNote(text: "Don't flare your elbows out"),
         ExerciseNote(text: "Use a spotter for heavy weights")
     ]
-//    exercise.trackWeight = false
-//    exercise.trackTime = true
-//    exercise.trackDuration = true
-//    exercise.trackReps = false
+    exercise.trackWeight = false
+    exercise.trackTime = false
+    exercise.trackDuration = true
+    exercise.trackReps = true
     
     exercise.video = "https://www.youtube.com/watch?v=U5zrloYWwxw"
     
