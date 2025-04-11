@@ -170,6 +170,115 @@ class ExerciseNote {
     }
 }
 
+@Model
+class Barbell {
+    var weight: Double
+    var label: String
+    
+    init(weight: Double, label: String) {
+        self.weight = weight
+        self.label = label
+    }
+}
+
+let defaultBarbells: [Barbell] = [
+    Barbell(weight: 20, label: "Standard"),
+    Barbell(weight: 15, label: "Women"),
+    Barbell(weight: 10, label: "EZ Curl"),
+    Barbell(weight: 20, label: "Trap Bar"),
+    
+]
+
+
+enum PlateColor: String, Codable, CaseIterable {
+    case red
+    case blue
+    case yellow
+    case green
+    case white
+    case black
+    case gray
+}
+
+extension PlateColor {
+    func getAsColor() -> Color {
+        switch self {
+        case .red:
+            return Color.red
+        case .blue:
+            return Color.blue
+        case .yellow:
+            return Color.yellow
+        case .green:
+            return Color.green
+        case .white:
+            return Color.white
+        case .black:
+            return Color.black
+        case .gray:
+            return Color.gray
+        }
+    }
+}
+
+@Model
+class Plate {
+    var weight: Double
+    var color: PlateColor
+    var width: CGFloat
+    var height: CGFloat
+    var count: Int
+    
+    init(weight: Double, color: PlateColor, width: CGFloat, height: CGFloat, count: Int = 20) {
+        self.weight = weight
+        self.color = color
+        self.width = width
+        self.height = height
+        self.count = count
+    }
+}
+
+let defaultPlates: [Plate] = [
+    Plate(weight: 25, color: .red, width: 27, height: 450),
+    Plate(weight: 20, color: .blue, width: 20, height: 450),
+    Plate(weight: 15, color: .yellow, width: 19, height: 400),
+    Plate(weight: 10, color: .green, width: 19, height: 325),
+    Plate(weight: 5, color: .white, width: 20, height: 228),
+    Plate(weight: 2.5, color: .black, width: 15, height: 190),
+    Plate(weight: 1.25, color: .gray, width: 12, height: 160),
+    Plate(weight: 0.5, color: .gray, width: 8, height: 134),
+    Plate(weight: 0.25, color: .gray, width: 7, height: 112)
+]
+
+@MainActor func preloadBarbells(_ container: ModelContainer) {
+    do {
+            // Check we haven't already added our exercises.
+            let descriptor = FetchDescriptor<Barbell>()
+            let existingBarbells = try container.mainContext.fetchCount(descriptor)
+            guard existingBarbells == 0 else { return }
+
+            for barbell in defaultBarbells {
+                container.mainContext.insert(barbell)
+            }
+        } catch {
+            print("Failed to pre-seed database: \(error)")
+        }
+}
+
+@MainActor func preloadPlates(_ container: ModelContainer) {
+    do {
+            // Check we haven't already added our exercises.
+            let descriptor = FetchDescriptor<Plate>()
+            let existingPlates = try container.mainContext.fetchCount(descriptor)
+            guard existingPlates == 0 else { return }
+        
+            for plate in defaultPlates {
+                container.mainContext.insert(plate)
+            }
+        } catch {
+            print("Failed to pre-seed database: \(error)")
+        }
+}
 
 
 @Model

@@ -2,14 +2,14 @@
 
 ## Roadmap to app store:
 - [x] Different exercise types (only time, time and reps, only reps)
-- [ ] More advanced active workout editing (supersets, dropsets, rest timer, set weight based on a precentage of 1rpm, etc.)
 - [ ] Custom exercises
 - [ ] Adding historic workouts
 - [ ] Summary screen
 - [ ] Workout templates
-- [ ] RPE tracking
-- [ ] Plate calculator
+- [x] RPE tracking
+- [x] Plate calculator
 ## Post app store roadmap:
+- [ ] More advanced active workout editing (supersets, dropsets, rest timer, set weight based on a precentage of 1rpm, etc.)
 - [ ] Exercise analytics for different exercise types
 - [ ] Exercise records
 - [ ] Apple watch app

@@ -185,6 +185,9 @@ extension CustomKeyboard {
     class OpenStopwatchNotifier {
         static let openStopwatchPublisher: PassthroughSubject<Void, Never> = .init()
     }
+    class OpenPlateCalculatorNotifier {
+        static let openPlateCalculatorPublisher: PassthroughSubject<Void, Never> = .init()
+    }
     
     static let distanceKeyboard = CustomKeyboardBuilder { textDocumentProxy, onSubmit, playSystemFeedback in
         VStack {
@@ -270,6 +273,7 @@ extension CustomKeyboard {
                 // TODO: rpe!
                 Button {
                     playSystemFeedback?()
+                    OpenPlateCalculatorNotifier.openPlateCalculatorPublisher.send()
                 } label: {
                     Label("dumbbell", systemImage: "dumbbell")
                 }
@@ -637,6 +641,7 @@ struct WorkoutExerciseSetView : View  {
     
     @State private var showRPEPicker = false
     @State private var showStopwatch = false
+    @State private var showPlateCalculator = false
     var body: some View {
         HStack(alignment: .center) {
             WorkoutExerciseSetIndex(set: set, idx: idx, active: active)
@@ -671,6 +676,12 @@ struct WorkoutExerciseSetView : View  {
                                     weightTextSelection = nil
                                     weightText.wrappedValue = WorkoutExerciseSetView.formatter.string(from: NSNumber(value: roundToNearestMultiple(of: 1.25, value: doubleValue + 1.25 * Double(delta)))) ?? "0"
                                     weightTextSelection = .init(range: weightText.wrappedValue.startIndex..<weightText.wrappedValue.endIndex)
+                                }
+                            }
+                            .onReceive(CustomKeyboard.OpenPlateCalculatorNotifier.openPlateCalculatorPublisher) {
+                                if focusedField == WorkoutExerciseFocusState(setIdx: rawIdx, fieldIdx: .weight) {
+                                    print("show me!")
+                                    showPlateCalculator = true
                                 }
                             }
                         Text("kg")
@@ -933,10 +944,21 @@ struct WorkoutExerciseSetView : View  {
                 .presentationDetents([.fraction(0.55)])
             }
         }
+        
         .padding(.vertical, 2)
         .font(.system(.body, design: .rounded, weight: .medium))
         .alignmentGuide(.listRowSeparatorLeading) { _ in
             40
+        }
+        .sheet(isPresented: $showPlateCalculator) {
+            NavigationStack {
+                // TODO: bugs
+                // TODO: negative values in weight and count
+                // TODO: display weight for side maybe? just more information
+                // TODO: more colors
+                
+                PlateCalculator(weight: set.weight!)
+            }
         }
         
     }
@@ -1118,8 +1140,11 @@ struct WorkoutExerciseView: View {
 }
 
 #Preview {
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Workout.self, configurations: config)
+    let config = ModelConfiguration(for: Workout.self, Barbell.self, Plate.self, isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Workout.self, Barbell.self, Plate.self, configurations: config)
+    
+    preloadPlates(container)
+    preloadBarbells(container)
     let exercise = Exercise(name: "Bench Press", type: .weight_reps, primaryMuscleGroup: .chest, secondaryMuscleGroups: [.triceps, .shoulders])
     
     exercise.instructions = ["Lie flat on a bench with feet firmly on the ground.\nGrip the barbell slightly wider than shoulder-width apart.\nUnrack the barbell and hold it straight above your chest with arms fully extended.\nLower the barbell slowly to your mid-chest, keeping elbows at a 45-degree angle.\nPause briefly when the barbell touches your chest.\nPush the barbell back up to the starting position, exhaling as you press.\nLock out your arms at the top and repeat for desired reps.\nRack the barbell safely after completing your set."]
@@ -1129,9 +1154,9 @@ struct WorkoutExerciseView: View {
         ExerciseNote(text: "Don't flare your elbows out"),
         ExerciseNote(text: "Use a spotter for heavy weights")
     ]
-    exercise.trackWeight = false
+    exercise.trackWeight = true
     exercise.trackTime = false
-    exercise.trackDuration = true
+    exercise.trackDuration = false
     exercise.trackReps = true
     
     exercise.video = "https://www.youtube.com/watch?v=U5zrloYWwxw"

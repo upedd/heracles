@@ -40,10 +40,12 @@ struct heraclesApp: App {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(for: Workout.self) { result in
+        .modelContainer(for: [Workout.self, Barbell.self, Plate.self]) { result in
             do {
                 let container = try result.get()
                 preloadExercises(container)
+                preloadBarbells(container)
+                preloadPlates(container)
             } catch {
                 print("Failed to create model container.")
             }

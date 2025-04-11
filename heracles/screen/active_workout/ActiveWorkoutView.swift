@@ -390,10 +390,12 @@ struct ActiveWorkoutView: View {
 #Preview {
     let workout = Workout();
     ActiveWorkoutView(workout: workout, timerManager: .make(id: "preview"))
-        .modelContainer(for: Exercise.self, inMemory: true) { result in
+        .modelContainer(for: [Exercise.self, Plate.self, Barbell.self], inMemory: true) { result in
             do {
                 let container = try result.get()
                 preloadExercises(container)
+                preloadBarbells(container)
+                preloadPlates(container)
             } catch {
                 print("Failed to create model container.")
             }
