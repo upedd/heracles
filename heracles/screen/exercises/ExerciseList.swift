@@ -146,22 +146,12 @@ struct ExerciseList: View {
     @State private var selectedMuscles: Set<Muscle> = .init(Muscle.allCases)
     @State private var showFilters = false
     
+    @State private var showNewExercise = false
+    
     var body: some View {
         Group {
             if exercises.isEmpty {
                 ProgressView()
-            } else if customs {
-                
-                ContentUnavailableView {
-                    Label("No Custom Exercises", systemImage: "archivebox")
-                } description: {
-                    Text("Exercises you create will appear here.")
-                } actions: {
-                    Button("Create Exercise") {
-                        // TODO: implement
-                    }
-                    .buttonStyle(.borderless)
-                }
             } else {
                 TableViewWrapper(data: tableData) { item in
                     NavigationLink {
@@ -195,17 +185,44 @@ struct ExerciseList: View {
                             Label("filters", systemImage: "line.3.horizontal.decrease.circle")
                         }
                         .labelStyle(.iconOnly)
+                        if !recents {
+                            Button {
+                                showNewExercise.toggle()
+                            } label: {
+                                Label("Create Exercise", systemImage: "plus")
+                            }
+                        }
+
                     }
                 }
                 .sheet(isPresented: $showFilters) {
                     ExerciseFilterSheet(selectedEquipment: $selectedEquipment, selectedMuscles: $selectedMuscles)
                 }
+                .sheet(isPresented: $showNewExercise) {
+                    NewExerciseView()
+                }
                 .overlay {
-                    if recents && tableData.sections.first != nil && tableData.sections.first!.items.isEmpty {
-                        ContentUnavailableView {
-                            Label("No Recent Exercises", systemImage: "archivebox")
-                        } description: {
-                            Text("Exercises you recently used will appear here.")
+                    if tableData.sections.first == nil || tableData.sections.first!.items.isEmpty {
+                        if recents {
+                            ContentUnavailableView {
+                                Label("No Recent Exercises", systemImage: "archivebox")
+                            } description: {
+                                Text("Exercises you recently used will appear here.")
+                            }
+                        }
+                        
+                        if customs {
+                            ContentUnavailableView {
+                                Label("No Custom Exercises", systemImage: "archivebox")
+                            } description: {
+                                Text("Exercises you create will appear here.")
+                            } actions: {
+                                Button("Create Exercise") {
+                                    showNewExercise.toggle()
+                                }
+                                .buttonStyle(.borderless)
+                                
+                            }
                         }
                     }
                 }
@@ -235,6 +252,10 @@ struct ExerciseList: View {
             if let selectedGroup {
                 return exercise.primaryMuscles.contains(where: { muscle in muscle_to_group[muscle] == selectedGroup })
             }
+            if customs {
+                
+                return exercise.custom
+            }
             return true
         }
             .filter { exercise in
@@ -242,7 +263,7 @@ struct ExerciseList: View {
             }
             .filter { exercise in
                 selectedEquipment.contains(where: { equipment in
-                    exercise.equipment.contains(equipment)
+                    exercise.equipment.isEmpty || exercise.equipment.contains(equipment) // FIXME!
                 })
             }
             .sorted { $0.name < $1.name }
@@ -257,7 +278,7 @@ struct ExerciseList: View {
 
 #Preview {
     NavigationStack {
-        ExerciseList(selectedGroup: .chest)
+        ExerciseList(customs: true)
             .modelContainer(for: Exercise.self, inMemory: true) { result in
                 do {
                     let container = try result.get()

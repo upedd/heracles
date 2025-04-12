@@ -10,6 +10,41 @@ import YouTubePlayerKit
 struct ExerciseInfoView : View {
     @Bindable var exercise: Exercise
     
+    // TODO: copy and pasted those from ExerciseEditor deduplicate them!
+    var primaryMusclesLabel: String {
+        let primaryMuscles = exercise.primaryMuscles
+        if primaryMuscles.isEmpty {
+            return "None"
+        } else if exercise.primaryMuscles.count == 1 {
+            return primaryMuscles.first!.displayName()
+        } else {
+            
+            return primaryMuscles.prefix(primaryMuscles.count - 1).map { $0.displayName() }.joined(separator: ", ") + " and " + primaryMuscles.last!.displayName()
+        }
+    }
+    
+    var secondaryMusclesLabel: String {
+        let secondaryMuscles = exercise.secondaryMuscles
+        if secondaryMuscles.isEmpty {
+            return "None"
+        } else if secondaryMuscles.count == 1 {
+            return secondaryMuscles.first!.displayName()
+        } else {
+            return secondaryMuscles.prefix(secondaryMuscles.count - 1).map { $0.displayName() }.joined(separator: ", ") + " and " + secondaryMuscles.last!.displayName()
+        }
+    }
+    
+    var equipmentLabel: String {
+        let equipment = exercise.equipment
+        if equipment.isEmpty {
+            return "None"
+        } else if equipment.count == 1 {
+            return equipment.first!.displayName()
+        } else {
+            return equipment.prefix(equipment.count - 1).map { $0.displayName() }.joined(separator: ", ") + " and " + equipment.last!.displayName()
+        }
+    }
+    
     var body : some View {
         List {
             if exercise.video != nil {
@@ -39,20 +74,19 @@ struct ExerciseInfoView : View {
             Section("Muscles") {
                 HStack {
                     Text("Primary")
-                        .font(.headline)
                     Spacer()
-                    Text(exercise.primaryMuscles.map {$0.displayName()}.joined(separator: ", "))
+                    Text(primaryMusclesLabel)
+                        .foregroundStyle(.secondary)
                 }
-                if exercise.secondaryMuscles.count > 0 {
                     HStack {
                         Text("Secondary")
-                            .font(.headline)
                         Spacer()
-                        Text(exercise.secondaryMuscles.map {$0.displayName()}.joined(separator: ", "))
+                        Text(secondaryMusclesLabel)
+                            .foregroundStyle(.secondary)
                     }
-                }
+                
             }
-            if !exercise.instructions.isEmpty{
+            if !exercise.instructions.isEmpty {
                 Section("Instructions") {
                     ForEach(exercise.instructions, id: \.self) { instruction in
                         Text(instruction)

@@ -8,7 +8,7 @@ enum ExerciseType : String, Codable {
     case assisted_bodyweight
     case weighted_bodyweight
 }
-
+// TODO: empty equipment case
 enum Equipment : String, Codable, CaseIterable {
     case ez_curl_bar
     case barbell
@@ -340,7 +340,7 @@ class Exercise: Codable {
     var trackWeight = true
     var trackDuration = false
     var trackTime = false
-    
+    var custom = false
     
     @Relationship(deleteRule: .cascade) var pinnedNotes: [ExerciseNote] = []
     var hidden = false // Hidden exercises are not shown in the exercises list, we use it instead of deleting exercises in case they are used in a workout
@@ -350,6 +350,12 @@ class Exercise: Codable {
         //self.type = type
         self.primaryMuscles = [primaryMuscleGroup]
         self.secondaryMuscles = secondaryMuscleGroups
+    }
+    init(name: String, primaryMuscles: [Muscle], secondaryMuscles: [Muscle]) {
+        self.name = name
+        //self.type = type
+        self.primaryMuscles = primaryMuscles
+        self.secondaryMuscles = secondaryMuscles
     }
     
     required init(from decoder: Decoder) throws {

@@ -24,19 +24,73 @@ struct ExerciseView: View {
     
     @Bindable var exercise: Exercise
     @Query var workoutExercises: [WorkoutExercise]
+    @State private var isEditing = false
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.presentationMode) var presentationMode
+
+    @State private var showDeleteAlert = false
+    @State private var showCopyExercise = false
     
     var body: some View {
-        VStack {
-            if selectedTab == .info {
-                ExerciseInfoView(exercise: exercise)
-            } else  if selectedTab == .history {
-                ExerciseHistoryView(workoutExercises: workoutExercises.filter {$0.exercise == exercise}) // TODO: performance improvements
-            } else {
-                ExerciseChartsView(exercise: exercise)
+        if !isEditing {
+            VStack {
+                if selectedTab == .info {
+                    ExerciseInfoView(exercise: exercise)
+                } else  if selectedTab == .history {
+                    ExerciseHistoryView(workoutExercises: workoutExercises.filter {$0.exercise == exercise}) // TODO: performance improvements
+                } else {
+                    ExerciseChartsView(exercise: exercise)
+                }
             }
-        }
             .navigationTitle(exercise.name)
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar(content: {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    Menu {
+                        if exercise.custom {
+                            Button {
+                                isEditing.toggle()
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                                                        
+                        }
+                        Button {
+                            showCopyExercise.toggle()
+                        } label: {
+                            Label("Make Copy", systemImage: "doc.on.doc")
+                        }
+                        Section {
+                            if exercise.custom {
+                                Button (role: .destructive) {
+                                    showDeleteAlert.toggle()
+                                } label: {
+                                    Label("Delete Exercise", systemImage: "trash")
+                                }
+                                
+                                
+                            }
+                        }
+                    } label: {
+                        Label("Actions", systemImage: "ellipsis.circle")
+                            
+                    }
+                    .sheet(isPresented: $showCopyExercise) {
+                        NewExerciseView(exercise: exercise)
+                            
+                    }
+                    .alert("Delete exercise \"\(exercise.name)\"?", isPresented: $showDeleteAlert) {
+                        Button("Delete", role: .destructive) {
+                            modelContext.delete(exercise)
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                        
+                    } message: {
+                        Text("This action cannot be undone.")
+                    }
+                    
+                }
+            })
             .customHeaderView({
                 Picker("Section", selection: $selectedTab) {
                     ForEach(Tab.allCases) { tab in
@@ -45,6 +99,11 @@ struct ExerciseView: View {
                 }.pickerStyle(.segmented)
                     .padding()
             }, height: 50)
+            
+        } else {
+            ExerciseEditorView(exercise: exercise, isEditing: $isEditing)
+                .customHeaderView({}, height: 0)
+        }
     }
 }
 
@@ -53,6 +112,7 @@ struct ExerciseView: View {
     let container = try! ModelContainer(for: Workout.self, configurations: config)
     
     let exercise = Exercise(name: "Bench Press", type: .weight_reps, primaryMuscleGroup: .chest, secondaryMuscleGroups: [.triceps, .shoulders])
+    exercise.custom = true
     
     exercise.instructions = ["Lie flat on a bench with feet firmly on the ground.\nGrip the barbell slightly wider than shoulder-width apart.\nUnrack the barbell and hold it straight above your chest with arms fully extended.\nLower the barbell slowly to your mid-chest, keeping elbows at a 45-degree angle.\nPause briefly when the barbell touches your chest.\nPush the barbell back up to the starting position, exhaling as you press.\nLock out your arms at the top and repeat for desired reps.\nRack the barbell safely after completing your set."]
     
