@@ -3,7 +3,7 @@
 ## Roadmap to app store:
 - [x] Different exercise types (only time, time and reps, only reps)
 - [x] Custom exercises
-- [ ] Adding historic workouts
+- [x] Logging past workouts
 - [ ] Summary screen
 - [ ] Workout templates
 - [x] RPE tracking

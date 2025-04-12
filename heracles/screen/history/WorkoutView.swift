@@ -118,23 +118,17 @@ struct WorkoutExerciseLinkLink : View {
 }
 
 struct WorkoutView: View {
-    
-    
     var workout: Workout
     @State private var isEditing = false
+    @State private var showWorkoutInfoEditor = false
+    @State private var isAddingExercises = false
+    
+    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.modelContext) private var modelContext
+
+    @State private var showDeleteAlert = false
     var body: some View {
-        if isEditing {
-            WorkoutEditorView(workout: workout)
-                .toolbarTitleDisplayMode(.inline)
-                .toolbar {
-                    Button("Done") {
-                        withAnimation {
-                            isEditing.toggle()
-                        }
-                    }
-                }
-        } else {
-            
+        
             List {
                 HStack(alignment: .top){
                     WorkoutIconView(workout: workout)
@@ -197,6 +191,26 @@ struct WorkoutView: View {
                     ForEach(workout.exercises) { exercise in
                         WorkoutExerciseLinkLink(exercise: exercise)
                     }
+                    .onDelete { indexSet in
+                        workout.exercises.remove(atOffsets: indexSet)
+                    }
+                    .onMove { indexSet, newOffset in
+                        workout.exercises.move(fromOffsets: indexSet, toOffset: newOffset)
+                    }
+                    if isEditing {
+                        Button {
+                            isAddingExercises.toggle()
+                        } label: {
+                            Label("Add Exercises", systemImage: "plus")
+                        }
+                        .sheet(isPresented: $isAddingExercises) {
+                            SelectExercisesView(onDone: { selected in
+                                for exercise in selected {
+                                    workout.exercises.append(WorkoutExercise(exercise: exercise))
+                                }
+                            })
+                        }
+                    }
                 } header: {
                     Text("Exercises")
                         .font(.title2.bold())
@@ -210,13 +224,47 @@ struct WorkoutView: View {
             .navigationTitle(workout.date.formatted(.dateTime.weekday().day().month()))
             .toolbarTitleDisplayMode(.inline)
             .toolbar {
-                Button("Edit") {
-                    withAnimation {
-                        isEditing.toggle()
+                if isEditing {
+                    Button("Done") {
+                        withAnimation {
+                            isEditing.toggle()
+                        }
+                    }
+                } else {
+                    Menu {
+                        Button("Show Workout Info", systemImage: "info.circle") {
+                            showWorkoutInfoEditor.toggle()
+                        }
+                        Button("Edit Exercises", systemImage: "pencil") {
+                            withAnimation {
+                                isEditing.toggle()
+                            }
+                        }
+                        Button("Delete Workout", systemImage: "trash", role: .destructive) {
+                            showDeleteAlert.toggle()
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            
                     }
                 }
             }
-        }
+            .sheet(isPresented: $showWorkoutInfoEditor) {
+                NavigationStack {
+                    WorkoutEditorView(workout: workout)
+                }
+            }
+            .alert("Delete workout \"\(workout.name)\"?", isPresented: $showDeleteAlert) {
+                Button("Delete", role: .destructive) {
+                    modelContext.delete(workout)
+                    presentationMode.wrappedValue.dismiss()
+                }
+                
+            } message: {
+                Text("This action cannot be undone.")
+            }
+            .environment(\.editMode, .constant(isEditing ? EditMode.active : EditMode.inactive))
+        
     }
 }
 

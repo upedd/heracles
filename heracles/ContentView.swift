@@ -20,6 +20,17 @@ struct ContentView: View {
     @Query private var workouts: [Workout]
     @StateObject private var timerManager = TimerManager.make(id: "workout")
     
+    
+    func startEmptyWorkout() {
+        let workout = Workout()
+        workout.active = true
+        modelContext.insert(workout)
+        timerManager.reset()
+        timerManager.start()
+        workout.name = "Workout" // TODO(polish): better default names for workouts, we should be constructing those names based on the time of the day and muscle groups of exercises. Examples: Morning Push Workout, Evening Full Body Workout, Afternoon Arms Workout
+        isPopupOpen = true
+    }
+    
     var activeWorkout: Workout? {
         return workouts.filter { $0.active == true }.first
     }
@@ -31,12 +42,12 @@ struct ContentView: View {
                 }
             
             
-            WorkoutScreen(isPopupOpen: $isPopupOpen, timerManager: timerManager)
+            WorkoutScreen(startEmptyWorkout: startEmptyWorkout)
                 .tabItem {
                     Label("Workout", systemImage: "dumbbell")
                 }
             
-            HistoryScreen()
+            HistoryScreen(startEmptyWorkout: startEmptyWorkout)
                 .tabItem {
                     Label("History", systemImage: "clock")
                 }
@@ -81,15 +92,6 @@ struct ContentView: View {
                         .foregroundStyle(.white)
                         
                     })
-                //                    .popupBarItems {
-                //                        ToolbarItemGroup(placement: .popupBar) {
-                //                            Button {
-                //                                timerManager.pause()
-                //                            } label: {
-                //                                Image(systemName: "play.fill")
-                //                            }
-                //                        }
-                //                    }
                 
             }
         }

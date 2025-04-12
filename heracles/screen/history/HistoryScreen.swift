@@ -75,6 +75,8 @@ struct HistoryScreen: View {
         }
     }
     
+    var startEmptyWorkout: () -> Void
+    
     @Query(sort: \Workout.date, order: .reverse) private var workouts: [Workout]
     @Environment(\.modelContext) private var modelContext
     var groupedWorkouts: [Date: [Workout]] {
@@ -100,9 +102,9 @@ struct HistoryScreen: View {
             }
             return nil
     }
-    
-    // TODO: adding workouts!
     // TODO: workout deletion warning!
+    
+    @State private var isLoggingPastWorkout = false
     
     var body: some View {
         NavigationStack {
@@ -125,7 +127,8 @@ struct HistoryScreen: View {
                                 ContentUnavailableView {
                                                         Label("No Workouts on this day", systemImage: "calendar.badge.exclamationmark")
                                 } actions: {
-                                    Button("Add Workout") {
+                                    Button("Log Past Workout") {
+                                        isLoggingPastWorkout.toggle()
                                     }
                                     .buttonStyle(.borderless)
                                 }
@@ -175,8 +178,14 @@ struct HistoryScreen: View {
                         } description: {
                             Text("Your workouts will appear here")
                         } actions: {
-                            Button("Start Workout") {
-                                
+                            Menu("Add Workout", systemImage: "plus") {
+                                Button("Start Empty Workout", systemImage: "bolt.fill") {
+                                    startEmptyWorkout()
+                                }
+                                // TODO: start workout from template
+                                Button("Log Past Workout", systemImage: "archivebox.fill") {
+                                    isLoggingPastWorkout.toggle()
+                                }
                             }
                             .buttonStyle(.borderless)
                         }
@@ -185,21 +194,42 @@ struct HistoryScreen: View {
             }
             
             .toolbar {
-                if isShowingCalendar {
-                    Button {
-                        isShowingCalendar = false
-                    
-                    } label: {
-                        Label("List", systemImage: "list.bullet")
-                    }
-                } else {
-                    Button {
-                        isShowingCalendar = true
-                    } label: {
-                        Label("Calendar", systemImage: "calendar")
+                ToolbarItem(placement: .topBarLeading) {
+                    EditButton()
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    if isShowingCalendar {
+                        Button {
+                            isShowingCalendar = false
+                        
+                        } label: {
+                            Label("List", systemImage: "list.bullet")
+                        }
+                    } else {
+                        Button {
+                            isShowingCalendar = true
+                        } label: {
+                            Label("Calendar", systemImage: "calendar")
+                        }
                     }
                 }
-                EditButton()
+                
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu("Add Workout", systemImage: "plus") {
+                        Button("Start Empty Workout", systemImage: "bolt.fill") {
+                                startEmptyWorkout()
+                        }
+                        // TODO: start workout from template
+                        Button("Log Past Workout", systemImage: "archivebox.fill") {
+                            isLoggingPastWorkout.toggle()
+                        }
+                    }
+                }
+            }
+            .sheet(isPresented: $isLoggingPastWorkout) {
+                NavigationStack {
+                    NewWorkoutView(date: selectedDate)
+                }
             }
             .listStyle(.plain)
             .listRowSeparator(.hidden)
@@ -214,10 +244,11 @@ struct HistoryScreen: View {
     
     
     
-    HistoryScreen()    .modelContainer(for: Workout.self, inMemory: true) { result in
+    HistoryScreen(startEmptyWorkout: {})    .modelContainer(for: Workout.self, inMemory: true) { result in
         do {
             let container = try result.get()
-            for i in 0..<100 {
+            preloadExercises(container)
+            for i in 0..<0 {
                 container.mainContext.insert(Workout.sample)
             }
         } catch {

@@ -95,6 +95,6 @@ struct DurationPicker: View {
                                     .clipped()
         }
         .padding(.all, 32)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        //.frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

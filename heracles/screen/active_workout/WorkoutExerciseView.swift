@@ -646,7 +646,6 @@ struct WorkoutExerciseSetView : View  {
         HStack(alignment: .center) {
             WorkoutExerciseSetIndex(set: set, idx: idx, active: active)
             Group {
-                if active {
                     if exercise.exercise.trackTime {
                         WorkoutExerciseSetInput(set: set, label: "distance", targetFocusState: WorkoutExerciseFocusState(setIdx: rawIdx, fieldIdx: .distance), text: distanceText, selection: $distanceTextSelection, focusedField: $focusedField)
                             .customKeyboard(.distanceKeyboard)
@@ -792,10 +791,7 @@ struct WorkoutExerciseSetView : View  {
                         .clipShape(RoundedRectangle(cornerRadius: 5))
                         .buttonStyle(.borderless)
                     }
-                } else {
-                    Text(set.formatted)
-                        .padding(.leading, 5)
-                }
+                
             }
             .opacity(active && set.completed ? 0.5 : 1)
         }
@@ -981,6 +977,7 @@ struct WorkoutExerciseView: View {
     struct AddSetButton : View {
         
         @Bindable var exercise: WorkoutExercise
+        var active: Bool
         
         
         var body: some View {
@@ -989,6 +986,10 @@ struct WorkoutExerciseView: View {
                     exercise.sets.append(.init(reps: last.reps, weight: last.weight, time: last.time, distance: last.distance))
                 } else {
                     exercise.sets.append(.init())
+                }
+                
+                if !active {
+                    exercise.sets.last!.completed = true
                 }
                 
             } label: {
@@ -1073,9 +1074,7 @@ struct WorkoutExerciseView: View {
                 .onMove(perform: { indices, newOffset in
                     exercise.sets.move(fromOffsets: indices, toOffset: newOffset)
                 })
-                if activeState {
-                    AddSetButton(exercise: exercise)
-                }
+                AddSetButton(exercise: exercise, active: active)
             }
             
             if !currentExerciseWorkoutExercises.isEmpty && active {
