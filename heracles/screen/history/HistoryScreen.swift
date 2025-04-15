@@ -36,7 +36,7 @@ struct HistoryScreen: View {
         var body: some View {
             ZStack {
                 HStack(alignment: .center) {
-                    WorkoutIconView(workout: workout)
+                    WorkoutIconView(exercises: workout.exercises)
                         .frame(width: 50, height: 50)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                         .padding(.trailing, 10)

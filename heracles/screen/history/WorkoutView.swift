@@ -46,11 +46,11 @@ struct WorkoutMuscleDistributionChart : View {
     
 }
 
-extension Workout {
+extension Array<WorkoutExercise> {
     func getMuscleGroupDistribution() -> [(group: MuscleGroup, value: Double)] {
         // TODO this is temp!
         var distribution: [MuscleGroup: Double] = [:]
-        for exercise in exercises {
+        for exercise in self {
             for muscle in exercise.exercise.primaryMuscles {
                 distribution[muscle_to_group[muscle]!, default: 0] += 1
             }
@@ -63,12 +63,17 @@ extension Workout {
 
 // FIXME: random changes when exericses are distributted equally!
 struct WorkoutIconView : View {
-    var workout: Workout
+    var exercises: [WorkoutExercise]
     
     var colors: [Color] {
-        let distribution = workout.getMuscleGroupDistribution()
+        let distribution = exercises.getMuscleGroupDistribution()
         return distribution
-            .sorted(by: {$0.value > $1.value})
+            .sorted(by: {
+                if $0.value == $1.value {
+                    return $0.group.rawValue < $1.group.rawValue
+                }
+                return $0.value > $1.value
+            })
             .map { muscle_group_colors[$0.group]! }
     }
     
@@ -131,7 +136,7 @@ struct WorkoutView: View {
         
             List {
                 HStack(alignment: .top){
-                    WorkoutIconView(workout: workout)
+                    WorkoutIconView(exercises: workout.exercises)
                     .frame(width: 60, height: 60)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .padding(.trailing, 10)
@@ -172,7 +177,7 @@ struct WorkoutView: View {
                         VStack(alignment: .leading) {
                             Text("Muscle Groups")
                                 .font(.body)
-                            WorkoutMuscleDistributionChart(data: workout.getMuscleGroupDistribution())
+                            WorkoutMuscleDistributionChart(data: workout.exercises.getMuscleGroupDistribution())
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }

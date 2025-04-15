@@ -22,12 +22,27 @@ struct ContentView: View {
     
     
     func startEmptyWorkout() {
+        startWorkout([], nil)
+    }
+    
+    func startWorkout(_ exercises: [WorkoutExercise], _ name: String?) {
         let workout = Workout()
         workout.active = true
         modelContext.insert(workout)
         timerManager.reset()
         timerManager.start()
-        workout.name = "Workout" // TODO(polish): better default names for workouts, we should be constructing those names based on the time of the day and muscle groups of exercises. Examples: Morning Push Workout, Evening Full Body Workout, Afternoon Arms Workout
+        // TODO: fixme
+        workout.exercises = exercises.map {
+            let workoutExercise = WorkoutExercise(exercise: $0.exercise)
+            for set in $0.sets {
+                let workoutSet = WorkoutSet()
+                workoutSet.reps = set.reps
+                workoutSet.weight = set.weight
+                workoutExercise.sets.append(workoutSet)
+            }
+            return workoutExercise
+        }
+        workout.name = name ?? "Workout" // TODO(polish): better default names for workouts, we should be constructing those names based on the time of the day and muscle groups of exercises. Examples: Morning Push Workout, Evening Full Body Workout, Afternoon Arms Workout
         isPopupOpen = true
     }
     
@@ -42,7 +57,7 @@ struct ContentView: View {
                 }
             
             
-            WorkoutScreen(startEmptyWorkout: startEmptyWorkout)
+            WorkoutScreen(startWorkout: startWorkout)
                 .tabItem {
                     Label("Workout", systemImage: "dumbbell")
                 }
@@ -100,10 +115,12 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: Workout.self, inMemory: true) { result in
+        .modelContainer(for: [Workout.self, WorkoutTemplate.self]
+                              , inMemory: true) { result in
             do {
                 let container = try result.get()
                 preloadExercises(container)
+                preloadWorkoutTemplates(container)
             } catch {
                 print("Failed to create model container.")
             }

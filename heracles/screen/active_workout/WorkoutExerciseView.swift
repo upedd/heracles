@@ -508,6 +508,7 @@ struct WorkoutExerciseSetView : View  {
     var rawIdx: Int
     @FocusState.Binding var focusedField: WorkoutExerciseFocusState?
     @ObservedObject var stopwatchTimerManager: TimerManager
+    var isInTemplate: Bool // temp
     
     @Environment(\.editMode) var editMode
     
@@ -663,7 +664,7 @@ struct WorkoutExerciseSetView : View  {
                         Text("km")
                     }
                     
-                    if exercise.exercise.trackWeight {
+                    if exercise.exercise.trackWeight && !isInTemplate {
                         WorkoutExerciseSetInput(set: set, label: "weight", targetFocusState: WorkoutExerciseFocusState(setIdx: rawIdx, fieldIdx: .weight), text: weightText, selection: $weightTextSelection, focusedField: $focusedField)
                             .customKeyboard(.weightKeyboard)
                             .onCustomSubmit {
@@ -756,7 +757,9 @@ struct WorkoutExerciseSetView : View  {
                         
                     }
                     if exercise.exercise.trackReps {
-                        Text("×")
+                        if !isInTemplate {
+                            Text("×")
+                        }
                         WorkoutExerciseSetInput(set: set, label: "reps", targetFocusState: WorkoutExerciseFocusState(setIdx: rawIdx, fieldIdx: .reps), text: repsText, selection: $repsTextSelection, focusedField: $focusedField)
                             .customKeyboard(.repsKeyboard)
                             .onCustomSubmit {
@@ -776,6 +779,9 @@ struct WorkoutExerciseSetView : View  {
                                     set.RPE = 8.5
                                 }
                             }
+                        if isInTemplate {
+                            Text("reps")
+                        }
                     }
                     if set.RPE != nil {
                         Text("RPE")
@@ -791,6 +797,7 @@ struct WorkoutExerciseSetView : View  {
                         .clipShape(RoundedRectangle(cornerRadius: 5))
                         .buttonStyle(.borderless)
                     }
+                
                 
             }
             .opacity(active && set.completed ? 0.5 : 1)
@@ -1043,11 +1050,12 @@ struct WorkoutExerciseView: View {
     @Query var workoutExercises: [WorkoutExercise]
     var currentExerciseWorkoutExercises: [WorkoutExercise] {
         workoutExercises.filter {
-            $0.exercise == exercise.exercise && $0.workout! != exercise.workout! && !$0.workout!.active
+            $0.exercise == exercise.exercise && $0.workout != nil && $0.workout! != exercise.workout! && !$0.workout!.active
         }
     }
     
     var active: Bool
+    var isInTemplate: Bool = false // temp!
     
     @State var showInfoSheet = false
     @State var activeState: Bool = false
@@ -1065,7 +1073,7 @@ struct WorkoutExerciseView: View {
             Section("Sets") {
                 // MESS!!!
                 ForEach(Array(setsWithIdx.enumerated()), id: \.element.0) { rawIdx, element in
-                    WorkoutExerciseSetView(set: element.0, exercise: exercise, idx: element.1, active: activeState, rawIdx: rawIdx, focusedField: $focusedField, stopwatchTimerManager: stopwatchTimerManager)
+                    WorkoutExerciseSetView(set: element.0, exercise: exercise, idx: element.1, active: activeState, rawIdx: rawIdx, focusedField: $focusedField, stopwatchTimerManager: stopwatchTimerManager, isInTemplate: isInTemplate)
                     
                 }
                 .onDelete(perform: { indexSet in

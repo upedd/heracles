@@ -503,7 +503,265 @@ final class WorkoutSet {
     }
 }
 
+// TODO: fix all errors that are caused by reusing workout exercise here!
+// TODO: prebuilt workout templates
+@Model
+final class WorkoutTemplate {
+    var name: String
+    var exercises: [WorkoutExercise]
+    
+    init(name: String, exercises: [WorkoutExercise]) {
+        self.name = name
+        self.exercises = exercises
+    }
+    
+    static var sample: WorkoutTemplate {
+        var exercises = [WorkoutExercise]()
+        for _ in 0..<Int.random(in: 4...7) {
+            exercises.append(WorkoutExercise.sample)
+        }
+        var templateName = ["Chest Day", "Leg Day", "Back Day", "Shoulder Day", "Arm Day", "Upper Workout", "Lower Workout", "Full Body 1", "Full Body 2", "Full Body 3"].randomElement()!
+        return WorkoutTemplate(name: templateName, exercises: exercises)
+    }
+}
 
+var workoutTemplatesSampleData: [(name: String, exercises: [(name: String, sets: Int, repsInSet: Int)])] = [
+    (
+        name: "Upper Body Power",
+        exercises: [
+            (name: "Barbell Bench Press", sets: 4, repsInSet: 8),
+            (name: "Bent Over Barbell Row", sets: 4, repsInSet: 8),
+            (name: "Seated Dumbbell Press", sets: 3, repsInSet: 10),
+            (name: "Pullups", sets: 3, repsInSet: 10),
+            (name: "Dumbbell Flyes", sets: 3, repsInSet: 12)
+        ]
+    ),
+    (
+        name: "Lower Body Strength",
+        exercises: [
+            (name: "Barbell Squat", sets: 5, repsInSet: 5),
+            (name: "Romanian Deadlift", sets: 4, repsInSet: 8),
+            (name: "Leg Press", sets: 3, repsInSet: 10),
+            (name: "Seated Leg Curl", sets: 3, repsInSet: 12)
+        ]
+    ),
+    (
+        name: "Push Workout",
+        exercises: [
+            (name: "Standing Military Press", sets: 4, repsInSet: 8),
+            (name: "Incline Dumbbell Press", sets: 4, repsInSet: 10),
+            (name: "Dips (Chest Focus)", sets: 3, repsInSet: 12),
+            (name: "Triceps Pushdown", sets: 3, repsInSet: 15),
+            (name: "Side Lateral Raise", sets: 3, repsInSet: 15)
+        ]
+    ),
+    (
+        name: "Pull Workout",
+        exercises: [
+            (name: "Barbell Deadlift", sets: 4, repsInSet: 6),
+            (name: "Seated Cable Rows", sets: 4, repsInSet: 10),
+            (name: "Full Range-Of-Motion Lat Pulldown", sets: 3, repsInSet: 12),
+            (name: "Barbell Curl", sets: 3, repsInSet: 12),
+            (name: "Face Pull", sets: 3, repsInSet: 15)
+        ]
+    ),
+    (
+        name: "Leg Day",
+        exercises: [
+            (name: "Front Barbell Squat", sets: 4, repsInSet: 8),
+            (name: "Barbell Walking Lunge", sets: 3, repsInSet: 10),
+            (name: "Leg Extensions", sets: 3, repsInSet: 12),
+            (name: "Lying Leg Curls", sets: 3, repsInSet: 12),
+            (name: "Standing Barbell Calf Raise", sets: 4, repsInSet: 15)
+        ]
+    ),
+    (
+        name: "Full Body Basic",
+        exercises: [
+            (name: "Barbell Squat", sets: 4, repsInSet: 8),
+            (name: "Barbell Bench Press", sets: 4, repsInSet: 8),
+            (name: "Barbell Deadlift", sets: 4, repsInSet: 6)
+        ]
+    ),
+    (
+        name: "Chest Focus",
+        exercises: [
+            (name: "Barbell Bench Press", sets: 5, repsInSet: 5),
+            (name: "Incline Dumbbell Press", sets: 4, repsInSet: 8),
+            (name: "Decline Dumbbell Flyes", sets: 3, repsInSet: 10),
+            (name: "Cable Crossover", sets: 3, repsInSet: 12),
+            (name: "Dips (Chest Focus)", sets: 3, repsInSet: 10)
+        ]
+    ),
+    (
+        name: "Back Development",
+        exercises: [
+            (name: "Barbell Deadlift", sets: 4, repsInSet: 6),
+            (name: "Bent Over Barbell Row", sets: 4, repsInSet: 8),
+            (name: "Seated Cable Rows", sets: 3, repsInSet: 10),
+            (name: "Wide-Grip Lat Pulldown", sets: 3, repsInSet: 12),
+            (name: "Face Pull", sets: 3, repsInSet: 15),
+            (name: "Hyperextensions (Back Extensions)", sets: 3, repsInSet: 12)
+        ]
+    ),
+    (
+        name: "Shoulder Builder",
+        exercises: [
+            (name: "Seated Dumbbell Press", sets: 4, repsInSet: 8),
+            (name: "Arnold Dumbbell Press", sets: 3, repsInSet: 10),
+            (name: "Side Lateral Raise", sets: 3, repsInSet: 12),
+            (name: "Front Dumbbell Raise", sets: 3, repsInSet: 12),
+            (name: "Reverse Flyes", sets: 3, repsInSet: 12),
+            (name: "Barbell Shrug", sets: 3, repsInSet: 15)
+        ]
+    ),
+    (
+        name: "Arm Day",
+        exercises: [
+            (name: "Close-Grip Barbell Bench Press", sets: 4, repsInSet: 8),
+            (name: "Barbell Curl", sets: 4, repsInSet: 10),
+            (name: "EZ-Bar Skullcrusher", sets: 3, repsInSet: 12),
+            (name: "Hammer Curl", sets: 3, repsInSet: 12),
+            (name: "Triceps Pushdown", sets: 3, repsInSet: 15),
+            (name: "Concentration Curls", sets: 3, repsInSet: 15)
+        ]
+    ),
+    (
+        name: "Power Lower Body",
+        exercises: [
+            (name: "Barbell Squat", sets: 5, repsInSet: 5),
+            (name: "Barbell Deadlift", sets: 4, repsInSet: 5),
+            (name: "Power Clean", sets: 4, repsInSet: 5),
+            (name: "Barbell Walking Lunge", sets: 3, repsInSet: 8)
+        ]
+    ),
+    (
+        name: "Core Strength",
+        exercises: [
+            (name: "Plank", sets: 3, repsInSet: 30),
+            (name: "Hanging Leg Raise", sets: 3, repsInSet: 12),
+            (name: "Russian Twist", sets: 3, repsInSet: 15),
+            (name: "Ab Roller", sets: 3, repsInSet: 10),
+            (name: "Cable Crunch", sets: 3, repsInSet: 15),
+            (name: "Side Bridge", sets: 3, repsInSet: 30),
+            (name: "Decline Crunch", sets: 3, repsInSet: 15),
+            (name: "Mountain Climbers", sets: 3, repsInSet: 20)
+        ]
+    ),
+    (
+        name: "Beginner Full Body",
+        exercises: [
+            (name: "Barbell Squat", sets: 3, repsInSet: 10),
+            (name: "Barbell Bench Press", sets: 3, repsInSet: 10),
+            (name: "Wide-Grip Lat Pulldown", sets: 3, repsInSet: 10),
+            (name: "Dumbbell Shoulder Press", sets: 3, repsInSet: 10),
+            (name: "Barbell Curl", sets: 2, repsInSet: 12),
+            (name: "Triceps Pushdown", sets: 2, repsInSet: 12),
+            (name: "Front Leg Raises", sets: 2, repsInSet: 15)
+        ]
+    ),
+    (
+        name: "Strength Upper Body",
+        exercises: [
+            (name: "Barbell Bench Press", sets: 5, repsInSet: 5),
+            (name: "Bent Over Barbell Row", sets: 5, repsInSet: 5),
+            (name: "Standing Military Press", sets: 3, repsInSet: 8),
+            (name: "Weighted Pull Ups", sets: 3, repsInSet: 8),
+            (name: "Dips (Triceps Focus)", sets: 3, repsInSet: 8)
+        ]
+    ),
+    (
+        name: "Quad Focus",
+        exercises: [
+            (name: "Barbell Squat", sets: 4, repsInSet: 8),
+            (name: "Leg Press", sets: 4, repsInSet: 10),
+            (name: "Hack Squat", sets: 3, repsInSet: 12),
+            (name: "Leg Extensions", sets: 3, repsInSet: 15)
+        ]
+    ),
+    (
+        name: "Hamstring Focus",
+        exercises: [
+            (name: "Romanian Deadlift", sets: 4, repsInSet: 8),
+            (name: "Lying Leg Curls", sets: 4, repsInSet: 10),
+            (name: "Good Morning", sets: 3, repsInSet: 12),
+            (name: "Glute Ham Raise", sets: 3, repsInSet: 12)
+        ]
+    ),
+    (
+        name: "Chest and Back",
+        exercises: [
+            (name: "Barbell Bench Press", sets: 4, repsInSet: 8),
+            (name: "Bent Over Barbell Row", sets: 4, repsInSet: 8),
+            (name: "Incline Dumbbell Press", sets: 3, repsInSet: 10),
+            (name: "Wide-Grip Lat Pulldown", sets: 3, repsInSet: 10),
+            (name: "Cable Crossover", sets: 3, repsInSet: 12),
+            (name: "Seated Cable Rows", sets: 3, repsInSet: 12)
+        ]
+    ),
+    (
+        name: "Shoulders and Arms",
+        exercises: [
+            (name: "Seated Dumbbell Press", sets: 4, repsInSet: 8),
+            (name: "Side Lateral Raise", sets: 3, repsInSet: 12),
+            (name: "Close-Grip Barbell Bench Press", sets: 4, repsInSet: 8),
+            (name: "Barbell Curl", sets: 3, repsInSet: 10),
+            (name: "Triceps Pushdown", sets: 3, repsInSet: 12),
+            (name: "Hammer Curl", sets: 3, repsInSet: 12)
+        ]
+    ),
+    (
+        name: "Explosive Power",
+        exercises: [
+            (name: "Power Clean", sets: 5, repsInSet: 3),
+            (name: "Box Jump (Multiple Response)", sets: 4, repsInSet: 5),
+            (name: "Push Press", sets: 4, repsInSet: 5),
+            (name: "Weighted Jump Squat", sets: 3, repsInSet: 8),
+            (name: "Medicine Ball Chest Pass", sets: 3, repsInSet: 8)
+        ]
+    ),
+    (
+        name: "Minimalist Strength",
+        exercises: [
+            (name: "Barbell Squat", sets: 5, repsInSet: 5),
+            (name: "Barbell Bench Press", sets: 5, repsInSet: 5),
+            (name: "Barbell Deadlift", sets: 5, repsInSet: 5),
+            (name: "Pullups", sets: 5, repsInSet: 5),
+            (name: "Dips (Triceps Focus)", sets: 5, repsInSet: 5)
+        ]
+    )
+]
+
+@MainActor func preloadWorkoutTemplates(_ container: ModelContainer) {
+    do {
+            // Check we haven't already added our exercises.
+            let descriptor = FetchDescriptor<WorkoutTemplate>()
+            let existingWorkoutTemplates = try container.mainContext.fetchCount(descriptor)
+            guard existingWorkoutTemplates == 0 else { return }
+            preloadExercises(container)
+        
+            for (name, exercises) in workoutTemplatesSampleData {
+                var workoutExercises: [WorkoutExercise] = []
+                for (exerciseName, sets, repsInSet) in exercises {
+                    let exerciseDescriptor = FetchDescriptor<Exercise>(predicate: #Predicate { $0.name == exerciseName })
+                    let exercise = try container.mainContext.fetch(exerciseDescriptor)
+                    if let firstExercise = exercise.first {
+                        let sets = (0..<sets).map { _ in
+                            WorkoutSet(reps: repsInSet, weight: 0)
+                        }
+                        workoutExercises.append(WorkoutExercise(exercise: firstExercise, sets: sets))
+                    } else {
+                        print("Exercise \(exerciseName) not found in database")
+                    }
+                    
+                }
+                let template = WorkoutTemplate(name: name, exercises: workoutExercises)
+                container.mainContext.insert(template)
+            }
+        } catch {
+            print("Failed to pre-seed database: \(error)")
+        }
+}
 @Model
 final class WorkoutExercise {
     var exercise: Exercise

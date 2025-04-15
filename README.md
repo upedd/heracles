@@ -5,7 +5,7 @@
 - [x] Custom exercises
 - [x] Logging past workouts
 - [ ] Summary screen
-- [ ] Workout templates
+- [x] Workout templates
 - [x] RPE tracking
 - [x] Plate calculator
 ## Post app store roadmap:

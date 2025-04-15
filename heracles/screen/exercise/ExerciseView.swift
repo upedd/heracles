@@ -58,7 +58,7 @@ struct ExerciseView: View {
                         Button {
                             showCopyExercise.toggle()
                         } label: {
-                            Label("Make Copy", systemImage: "doc.on.doc")
+                            Label("Duplicate", systemImage: "plus.rectangle.on.rectangle")
                         }
                         Section {
                             if exercise.custom {
