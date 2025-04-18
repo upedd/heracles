@@ -4,7 +4,7 @@
 - [x] Different exercise types (only time, time and reps, only reps)
 - [x] Custom exercises
 - [x] Logging past workouts
-- [ ] Summary screen
+- [x] Summary screen
 - [x] Workout templates
 - [x] RPE tracking
 - [x] Plate calculator

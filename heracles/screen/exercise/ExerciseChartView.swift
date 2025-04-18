@@ -13,9 +13,10 @@ enum ChartType {
     case line
 }
 
-struct ChartData {
+struct ChartData : Identifiable {
     var value: Double
     var date: Date
+    var id: Date { date }
 }
 
 // TODO: handle no data case for functions
