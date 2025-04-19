@@ -37,7 +37,7 @@ struct ExerciseView: View {
                 if selectedTab == .info {
                     ExerciseInfoView(exercise: exercise)
                 } else  if selectedTab == .history {
-                    ExerciseHistoryView(workoutExercises: workoutExercises.filter {$0.exercise == exercise}) // TODO: performance improvements
+                    ExerciseHistoryView(workoutExercises: workoutExercises.filter {$0.exercise == exercise && $0.workout != nil && !$0.workout!.active}) // TODO: performance improvements
                 } else {
                     ExerciseChartsView(exercise: exercise)
                 }
@@ -127,20 +127,20 @@ struct ExerciseView: View {
     
     
     let workout_exercises: [WorkoutExercise] = [
-        .init(exercise: exercise, sets: [
-            .init(reps: 8, weight: 60),
-            .init(reps: 8, weight: 70),
-            .init(reps: 6, weight: 70)
+        .init(exercise: exercise, order: 0, sets: [
+            .init(order: 0, reps: 8, weight: 60),
+            .init(order: 1, reps: 8, weight: 70),
+            .init(order: 2, reps: 6, weight: 70)
         ]),
-        .init(exercise: exercise, sets: [
-            .init(reps: 8, weight: 60),
-            .init(reps: 8, weight: 70),
-            .init(reps: 6, weight: 70)
+        .init(exercise: exercise, order: 1, sets: [
+            .init(order: 0, reps: 8, weight: 60),
+            .init(order: 1, reps: 8, weight: 70),
+            .init(order: 2, reps: 6, weight: 70)
         ]),
-        .init(exercise: exercise, sets: [
-            .init(reps: 8, weight: 60),
-            .init(reps: 8, weight: 70),
-            .init(reps: 6, weight: 70)
+        .init(exercise: exercise, order: 2, sets: [
+            .init(order: 0, reps: 8, weight: 60),
+            .init(order: 1, reps: 8, weight: 70),
+            .init(order: 2, reps: 6, weight: 70)
         ]),
     ]
     

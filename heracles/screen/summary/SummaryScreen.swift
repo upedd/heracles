@@ -8,15 +8,14 @@
 import SwiftUI
 import SwiftData
 import Charts
+import LicenseList
 // BIG TODO: customization!!!
-// TODO: active workout handling
 // possible ideas
 // workout heatmap or workouts per week
 // total time, reps, weight,
 // mini graphs for different exercises
 // possibly per muscle group or just muscle?
 
-// --  --
 
 struct SummaryCard<T: View> : View {
     var title: String
@@ -46,7 +45,7 @@ struct SummaryCard<T: View> : View {
 
 // inspired by: https://www.artemnovichkov.com/blog/github-contribution-graph-swift-charts
 struct WorkoutActivityHeatmap : View {
-    @Query(sort: \Workout.date, order: .reverse) var workouts: [Workout]
+    var workouts: [Workout]
     
     struct HeatMapData : Identifiable {
         var date: Date
@@ -212,7 +211,7 @@ struct MuscleGroupsPieChart : View {
     
     var body: some View {
         if data.isEmpty {
-            Text("No Data Available")
+            Text("No Data")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
         } else {
@@ -334,7 +333,7 @@ struct StatsCompareView : View {
     }
     var body : some View {
         if thisWeek == 0 && lastWeek == 0 {
-            Text("No Data Available")
+            Text("No Data")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
         } else {
@@ -407,7 +406,7 @@ struct VolumeMiniChartView : View {
         let calendar = Calendar.current
         var dates = [Date]()
         
-        for i in 0..<7 {
+        for i in -1..<6 { // TODO: hack
             if let date = calendar.date(byAdding: .day, value: i, to: calendar.startOfDay(for: Date.now.startOfWeek)) {
                 dates.append(date)
             }
@@ -432,12 +431,12 @@ struct VolumeMiniChartView : View {
 
             }
             
-            if workout.date > dates[currentDateIdx] {
+            if workout.date > dates[currentDateIdx] && workout.date < dates.first!.addingTimeInterval(60 * 60 * 24) {
                 var total = 0.0
                 for exercise in workout.exercises {
                     if !exercise.exercise.trackReps || !exercise.exercise.trackWeight { continue }
                     for set in exercise.sets {
-                        total += Double(set.reps!) * set.weight!
+                        total += Double(set.reps ?? 0) * (set.weight ?? 0)
                     }
                 }
                 totals[dates[currentDateIdx]]! += total
@@ -512,7 +511,12 @@ struct SettingsView : View {
                         Text("Kilograms").tag(0)
                         Text("Pounds").tag(1)
                     }
+                    Picker("Distance", selection: .constant(0)) {
+                        Text("Kilometers").tag(0)
+                        Text("Miles").tag(1)
+                    }
                 }
+                
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -596,6 +600,12 @@ struct TotalsCard : View {
 struct SummaryScreen: View {
     @Query(sort: \Workout.date, order: .reverse) var workouts: [Workout]
     
+    var loggedWorkouts: [Workout] {
+        workouts.filter { workout in
+            !workout.active
+        }
+    }
+    
     var currentMonth: String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MMMM"
@@ -607,26 +617,26 @@ struct SummaryScreen: View {
             ScrollView(showsIndicators: false ) {
                 
                 SummaryCard(title: "\(currentMonth) Statistics") {
-                    TotalsCard(workouts: workouts)
+                    TotalsCard(workouts: loggedWorkouts)
                 }
                 .padding(.horizontal)
                 .padding(.top)
                 HStack {
                     SummaryCard(title: "Total Volume") {
-                        VolumeMiniChartView(workouts: workouts)
+                        VolumeMiniChartView(workouts: loggedWorkouts)
                             .frame(height: 130)
                     }
                     
                     
                     SummaryCard(title: "\(currentMonth) Activity") {
                         VStack {
-                            MiniWorkoutCalendarView(workouts: workouts)
+                            MiniWorkoutCalendarView(workouts: loggedWorkouts)
                         }
                     }
                 }
                 .padding(.horizontal)
                 SummaryCard(title: "Weekly Activity") {
-                    WorkoutActivityHeatmap()
+                    WorkoutActivityHeatmap(workouts: loggedWorkouts)
                 }
                 .padding(.horizontal)
                 
@@ -634,13 +644,13 @@ struct SummaryScreen: View {
                 HStack {
                     SummaryCard(title: "Week Muscles") {
                         VStack {
-                            MuscleGroupsPieChart(workouts: workouts)
+                            MuscleGroupsPieChart(workouts: loggedWorkouts)
                         }
                         .frame(height: 130)
                     }
                     
                     SummaryCard(title: "Chest Volume") {
-                        StatsCompareView(workouts: workouts)
+                        StatsCompareView(workouts: loggedWorkouts)
                             .frame(height: 130)
                     }
                 }

@@ -4,15 +4,6 @@
 //
 //  Created by Miłosz Koczorowski on 25/02/2025.
 //
-
-
-//
-//  DurationPicker.swift
-//  heracles
-//
-//  Created by Miłosz Koczorowski on 10/10/2024.
-//
-
 import SwiftUI
 
 struct TimePickerView: View {

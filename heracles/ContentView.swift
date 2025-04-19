@@ -9,23 +9,25 @@ import SwiftUI
 import SwiftData
 import LNPopupUI
 
-//extension EnvironmentValues {
-//    @Entry var stopwatchTimerManager: TimerManager = TimerManager.make(id: "workout")
-//}
-
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var isPopupBarPresented = true
     @State private var isPopupOpen = false
     @Query private var workouts: [Workout]
     @StateObject private var timerManager = TimerManager.make(id: "workout")
-    
+    @State private var afterDiscardWorkoutFn: (() -> Void)?
+    @State private var showDiscardWorkout = false
     
     func startEmptyWorkout() {
         startWorkout([], nil)
     }
     
     func startWorkout(_ exercises: [WorkoutExercise], _ name: String?) {
+        if activeWorkout != nil {
+            showDiscardWorkout = true
+            afterDiscardWorkoutFn = { startWorkout(exercises, name) }
+            return
+        }
         let workout = Workout()
         workout.active = true
         modelContext.insert(workout)
@@ -33,9 +35,9 @@ struct ContentView: View {
         timerManager.start()
         // TODO: fixme
         workout.exercises = exercises.map {
-            let workoutExercise = WorkoutExercise(exercise: $0.exercise)
+            let workoutExercise = WorkoutExercise(exercise: $0.exercise, order: $0.order)
             for set in $0.sets {
-                let workoutSet = WorkoutSet()
+                let workoutSet = WorkoutSet(order: set.order)
                 workoutSet.reps = set.reps
                 workoutSet.weight = set.weight
                 workoutExercise.sets.append(workoutSet)
@@ -89,10 +91,39 @@ struct ContentView: View {
                 isPopupOpen = false
             }
         }
+        .confirmationDialog("Discard Current Workout?", isPresented: $showDiscardWorkout, titleVisibility: .visible, presenting: afterDiscardWorkoutFn, actions: { fn in
+            Button("Discard", role: .destructive) {
+                if let workout = activeWorkout {
+                    modelContext.delete(workout)
+                    try! modelContext.save() // prob bad idea!
+                }
+                fn()
+            }
+        }, message: { _ in
+            Text("You already have a workout in progress. Do you want to discard it and start a new one?")
+        })
         .popup(isBarPresented: $isPopupBarPresented, isPopupOpen: $isPopupOpen) {
             if let activeWorkout {
                 ActiveWorkoutView(workout: activeWorkout, timerManager: timerManager)
-                    .popupTitle(activeWorkout.name, subtitle: timerManager.elapsedTime.formatted)
+                    .popupTitle({
+                        Text(activeWorkout.name)
+                            .multilineTextAlignment(.leading)
+
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }, subtitle: {
+                        Group {
+                            if timerManager.isRunning {
+                                Text(TimeDataSource<Date>.currentDate, format: .stopwatch(startingAt: .now.addingTimeInterval(-timerManager.elapsedTime), maxPrecision: .seconds(1)))
+                                    
+                            } else {
+                                Text(Date.now, format: .stopwatch(startingAt: .now.addingTimeInterval(-timerManager.elapsedTime), maxPrecision: .seconds(1)))
+                            }
+                        }
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    })
+//                    .popupTitle(activeWorkout.name, subtitle: timerManager.elapsedTime.formatted)
                     .popupBarItems(trailing: {
                         Button {
                             if timerManager.isRunning {

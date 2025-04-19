@@ -12,9 +12,6 @@ import SwiftData
 // lots to improve and polish!
 
 // TODO: templates folders!
-// fix visuals
-// too much padding on card
-// weird padding on borders
 
 struct TemplateDetailsView : View {
     @Bindable var template: WorkoutTemplate
@@ -77,10 +74,20 @@ struct TemplateView : View {
     @Environment(\.modelContext) private var modelContext
     @State private var showDuplicateTemplate = false
     
+    @Query private var templates: [WorkoutTemplate]
+    @Query private var exercises: [Exercise] // possibly move futher up
+    var sortedTemplates: [WorkoutTemplate] {
+        templates.sorted { $0.order < $1.order }
+    }
+    
+    var sortedExercises: [WorkoutExercise] {
+        template.exercises.sorted {$0.order < $1.order}
+    }
+    
     var startWorkout: ([WorkoutExercise], String?) -> Void
     var body : some View {
         List {
-            ForEach(template.exercises) { exercise in
+            ForEach(sortedExercises) { exercise in
                 NavigationLink {
                     WorkoutExerciseView(exercise: exercise, active: false, isInTemplate: true)
                 } label: {
@@ -88,10 +95,21 @@ struct TemplateView : View {
                 }
             }
             .onDelete { indexSet in
-                template.exercises.remove(atOffsets: indexSet)
+                var updateExercises =
+                sortedExercises
+                updateExercises.remove(atOffsets: indexSet)
+                for (idx, exercise) in updateExercises.enumerated() {
+                    exercise.order = idx
+                }
+                template.exercises = updateExercises
             }
-            .onMove { indices, newOffset in
-                template.exercises.move(fromOffsets: indices, toOffset: newOffset)
+            .onMove { indexSet, newOffset in
+                var updateExercises = sortedExercises
+                updateExercises.move(fromOffsets: indexSet, toOffset: newOffset)
+                
+                for (idx, exercise) in updateExercises.enumerated() {
+                    exercise.order = idx
+                }
             }
             if isEditing {
                 Button {
@@ -100,9 +118,9 @@ struct TemplateView : View {
                     Label("Add Exercises", systemImage: "plus")
                 }
                 .sheet(isPresented: $isAddingExercises) {
-                    SelectExercisesView(onDone: { selected in
+                    SelectExercisesView(exercises: exercises, onDone: { selected in
                         for exercise in selected {
-                            template.exercises.append(WorkoutExercise(exercise: exercise))
+                            template.exercises.append(WorkoutExercise(exercise: exercise, order: template.exercises.count))
                         }
                     })
                 }
@@ -157,7 +175,7 @@ struct TemplateView : View {
             }
         }
         .sheet(isPresented: $showDuplicateTemplate) {
-            NewWorkoutTemplateView(name: "\(template.name) Copy", exercises: template.exercises) // check if should manually copy exercises!
+            NewWorkoutTemplateView(name: "\(template.name) Copy", workoutExercises: template.exercises) // check if should manually copy exercises!
         }
         .sheet(isPresented: $showDetails) {
             TemplateDetailsView(template: template, name: template.name)
@@ -165,6 +183,9 @@ struct TemplateView : View {
         .alert("Delete Template \"\(template.name)\"?", isPresented: $showDeleteAlert) {
             Button("Delete", role: .destructive) {
                 modelContext.delete(template)
+                for (idx, template) in sortedTemplates.filter {$0 != template}.enumerated() {
+                    template.order = idx
+                }
                 dismiss()
             }
             
@@ -242,18 +263,24 @@ struct WorkoutTemplateCard : View {
 
 struct NewWorkoutTemplateView : View {
     @State var name: String
-    @State var exercises: [WorkoutExercise]
+    @State var workoutExercises: [WorkoutExercise]
+    @Query private var templates: [WorkoutTemplate]
+    @Query private var exercises: [Exercise]
     @State private var isAddingExercises = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @State private var showCancellationWarning = false
 
+    var sortedExercises: [WorkoutExercise] {
+        workoutExercises.sorted {$0.order < $1.order}
+    }
+    
     var body : some View {
         NavigationStack {
             Form {
                 TextField("Template Name", text: $name)
                 Section {
-                    ForEach(exercises) { exercise in
+                    ForEach(sortedExercises) { exercise in
                         NavigationLink {
                             WorkoutExerciseView(exercise: exercise, active: false, isInTemplate: true)
                         } label: {
@@ -261,10 +288,21 @@ struct NewWorkoutTemplateView : View {
                         }
                     }
                     .onDelete { indexSet in
-                        exercises.remove(atOffsets: indexSet)
+                        var updateExercises =
+                        sortedExercises
+                        updateExercises.remove(atOffsets: indexSet)
+                        for (idx, exercise) in updateExercises.enumerated() {
+                            exercise.order = idx
+                        }
+                        workoutExercises = updateExercises
                     }
-                    .onMove { indices, newOffset in
-                        exercises.move(fromOffsets: indices, toOffset: newOffset)
+                    .onMove { indexSet, newOffset in
+                        var updateExercises = sortedExercises
+                        updateExercises.move(fromOffsets: indexSet, toOffset: newOffset)
+                        
+                        for (idx, exercise) in updateExercises.enumerated() {
+                            exercise.order = idx
+                        }
                     }
                     Button {
                         isAddingExercises.toggle()
@@ -272,9 +310,9 @@ struct NewWorkoutTemplateView : View {
                         Label("Add Exercises", systemImage: "plus")
                     }
                     .sheet(isPresented: $isAddingExercises) {
-                        SelectExercisesView(onDone: { selected in
+                        SelectExercisesView(exercises: exercises, onDone: { selected in
                             for exercise in selected {
-                                exercises.append(WorkoutExercise(exercise: exercise))
+                                workoutExercises.append(WorkoutExercise(exercise: exercise, order: workoutExercises.count))
                             }
                         })
                     }
@@ -285,17 +323,21 @@ struct NewWorkoutTemplateView : View {
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     Button {
-                        modelContext.insert(WorkoutTemplate(name: name, exercises: exercises))
+                        let template = WorkoutTemplate(order: templates.count, name: name, exercises: workoutExercises)
+                        for exercise in workoutExercises {
+                            exercise.template = template
+                        }
+                        modelContext.insert(template)
                         dismiss()
                     } label: {
                         Text("Add")
                     }
                     .fontWeight(.bold)
-                    .disabled(name.isEmpty || exercises.isEmpty)
+                    .disabled(name.isEmpty || workoutExercises.isEmpty)
                 }
                 ToolbarItemGroup(placement: .navigationBarLeading) {
                     Button {
-                        if !name.isEmpty || !exercises.isEmpty {
+                        if !name.isEmpty || !workoutExercises.isEmpty {
                             showCancellationWarning.toggle()
                         } else {
                             dismiss()
@@ -327,6 +369,11 @@ struct WorkoutScreen: View {
     @State private var currentlyDeletingTemplate: WorkoutTemplate?
     
     var startWorkout: ([WorkoutExercise], String?) -> Void
+    
+    var sortedTemplates : [WorkoutTemplate] {
+        templates.sorted { $0.order < $1.order }
+    }
+    
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
@@ -360,7 +407,7 @@ struct WorkoutScreen: View {
                 .padding(.horizontal)
                 // 2 column grid with workout templates
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 160))], spacing: 10) {
-                    ForEach(templates) { template in
+                    ForEach(templates.sorted(by: {$0.order > $1.order})) { template in
                         WorkoutTemplateCard(template: template, startWorkout: startWorkout, isSelecting: isSelecting, isSelected: selectedTemplates.contains(template))
                             .onTapGesture {
                                 if isSelecting {
@@ -376,7 +423,7 @@ struct WorkoutScreen: View {
                             .jiggling(isJiggling: isSelecting)
                             .contextMenu {
                                 Button("Duplicate", systemImage: "plus.rectangle.on.rectangle") {
-                                    modelContext.insert(WorkoutTemplate(name: "\(template.name) Copy", exercises: template.exercises))
+                                    modelContext.insert(WorkoutTemplate(order: templates.count, name: "\(template.name) Copy", exercises: template.exercises))
                                 }
                                 Button("Delete", systemImage: "trash", role: .destructive) {
                                     currentlyDeletingTemplate = template
@@ -393,6 +440,9 @@ struct WorkoutScreen: View {
                 Button("Delete", role: .destructive) {
                     if let currentlyDeletingTemplate {
                         modelContext.delete(currentlyDeletingTemplate)
+                        for (idx, template) in sortedTemplates.filter {$0 != currentlyDeletingTemplate}.enumerated() {
+                            template.order = idx
+                        }
                     }
                 }
                 
@@ -405,30 +455,30 @@ struct WorkoutScreen: View {
                 }
             }
             .sheet (isPresented: $isAddingTemplate) {
-                NewWorkoutTemplateView(name: "", exercises: [])
+                NewWorkoutTemplateView(name: "", workoutExercises: [])
             }
             
             .navigationTitle(isSelecting ? (selectedTemplates.isEmpty ? "Select Templates" : " \(selectedTemplates.count) Selected") : "Workout")
             .toolbar {
                 if isSelecting {
-                    ToolbarItemGroup(placement: .topBarLeading) {
-                        if selectedTemplates.isEmpty {
-                            Button {
-                                for template in templates {
-                                    selectedTemplates.insert(template)
-                                }
-                            } label: {
-                                Text("Select All")
-                            }
-                        } else {
-                            Button {
-                                selectedTemplates.removeAll()
-                            } label: {
-                                Text("Deselect All")
-                            }
-                        }
-                        
-                    }
+//                    ToolbarItemGroup(placement: .topBarLeading) {
+//                        if selectedTemplates.isEmpty {
+//                            Button {
+//                                for template in templates {
+//                                    selectedTemplates.insert(template)
+//                                }
+//                            } label: {
+//                                Text("Select All")
+//                            }
+//                        } else {
+//                            Button {
+//                                selectedTemplates.removeAll()
+//                            } label: {
+//                                Text("Deselect All")
+//                            }
+//                        }
+//                        
+//                    }
                     ToolbarItemGroup(placement: .topBarTrailing) {
                         Button {
                             isSelecting = false
@@ -438,15 +488,15 @@ struct WorkoutScreen: View {
                         }
                         .fontWeight(.bold)
                     }
-                    ToolbarItemGroup(placement: .bottomBar) {
-                        Button("Duplicate") {
-                            for template in selectedTemplates {
-                                modelContext.insert(WorkoutTemplate(name: "\(template.name) Copy", exercises: template.exercises))
-                            }
-                            isSelecting = false
-                            selectedTemplates.removeAll()
-                        }
-                        .disabled(selectedTemplates.isEmpty)
+                    ToolbarItemGroup(placement: .topBarLeading) {
+//                        Button("Duplicate") {
+//                            for template in selectedTemplates {
+//                                modelContext.insert(WorkoutTemplate(order: templates.count, name: "\(template.name) Copy", exercises: template.exercises))
+//                            }
+//                            isSelecting = false
+//                            selectedTemplates.removeAll()
+//                        }
+//                        .disabled(selectedTemplates.isEmpty)
                         Button( "Delete", role: .destructive) {
                             showDeleteWarning = true
                         }
@@ -458,6 +508,10 @@ struct WorkoutScreen: View {
                                 for template in selectedTemplates {
                                     modelContext.delete(template)
                                 }
+                                for (idx, template) in sortedTemplates.filter {!selectedTemplates.contains($0)}.enumerated() {
+                                    template.order = idx
+                                }
+
                                 selectedTemplates.removeAll()
                                 isSelecting = false
                             }

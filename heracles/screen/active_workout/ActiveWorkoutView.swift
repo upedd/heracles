@@ -40,11 +40,11 @@ struct SelectExercisesView: View {
         }
     }
     
-    @Query private var exercises: [Exercise]
+    var exercises: [Exercise]
     @State private var selection = Set<Exercise>()
     @State private var searchText = ""
     @Environment(\.dismiss) var dismiss
-    @StateObject private var tableData = TableViewData<Exercise>() // Holds
+    @State private var tableData = TableViewData<Exercise>() // Holds
     @State private var selectedEquipment: Set<Equipment> = .init( Equipment.allCases)
     
     @State private var selectedMuscles: Set<Muscle> = .init(Muscle.allCases)
@@ -61,6 +61,7 @@ struct SelectExercisesView: View {
     }
     
     @State private var grouping: Grouping = .name
+    @State private var showNewExercise = false
     
     var body: some View {
         NavigationStack {
@@ -77,22 +78,21 @@ struct SelectExercisesView: View {
             .onAppear { updateGroupedExercises() }
             .environment(\.editMode, .constant(EditMode.active))
             .navigationTitle(selection.isEmpty ? "Select Exercises" : "\(selection.count) Selected")
-            .sheet(isPresented: $showInfo) {
+            .sheet(item: $showExercise) { exercise in
                 NavigationStack {
                     // FIXME: prevent this from flashing empty on sheet open!
-                    if let showExercise {
-                        ExerciseView(exercise: showExercise)
+                        ExerciseView(exercise: exercise)
                             .toolbar {
-                                ToolbarItem(placement: .navigationBarTrailing) {
+                                ToolbarItem(placement: .navigationBarLeading) {
                                     Button {
-                                        showInfo.toggle()
+                                        showExercise = nil
                                     } label: {
                                         Text("Done")
                                     }
                                     
                                 }
                             }
-                    }
+                    
                 }
             }
             .toolbar {
@@ -137,7 +137,7 @@ struct SelectExercisesView: View {
                     }
                     Spacer()
                     Button {
-                        // TODO: STUB
+                        showNewExercise.toggle()
                     } label: {
                         Label("Add Exercise", systemImage: "plus")
                     }
@@ -147,6 +147,10 @@ struct SelectExercisesView: View {
             .sheet(isPresented: $showFilters) {
                 ExerciseFilterSheet(selectedEquipment: $selectedEquipment, selectedMuscles: $selectedMuscles)
             }
+            .sheet(isPresented: $showNewExercise) {
+                NewExerciseView()
+            }
+                    
             .onChange(of: exercises) {updateGroupedExercises() }
             .onChange(of: searchText) { updateGroupedExercises() }
             .onChange(of: selectedEquipment) {updateGroupedExercises() }
@@ -166,14 +170,14 @@ struct SelectExercisesView: View {
         selection.contains(exercise)
     }
     
-    private func updateGroupedExercises() {
+    private func updateGroupedExercises() { // TODO: optim
         let filtered = exercises
             .filter { exercise in
-                searchText.isEmpty || exercise.name.localizedCaseInsensitiveContains(searchText)
+                searchText.isEmpty || exercise.name.localizedCaseInsensitiveContains(searchText.trimmingCharacters(in: .whitespacesAndNewlines))
             }
             .filter { exercise in
                 selectedEquipment.contains(where: { equipment in
-                    exercise.equipment.contains(equipment)
+                    exercise.equipment.contains(equipment) || exercise.equipment.isEmpty
                 })
             }
             .sorted { $0.name < $1.name }
@@ -189,7 +193,7 @@ struct SelectExercisesView: View {
             let sorted = dict.sorted { $0.key < $1.key }.map { (title: $0.key, items: $0.value) }
             tableData.sections = sorted
         }else if grouping == .equipment {
-            let dict = Dictionary(grouping: filtered, by: { $0.equipment.first!.displayName() })
+            let dict = Dictionary(grouping: filtered, by: { $0.equipment.first?.displayName() ?? "none" })
             let sorted = dict.sorted { $0.key < $1.key }.map { (title: $0.key, items: $0.value) }
             tableData.sections = sorted
         }
@@ -253,6 +257,7 @@ struct ActiveWorkoutView: View {
     @State private var showFinishWarning = false
     
     @Query private var workoutExercises: [WorkoutExercise]
+    @Query private var exercises: [Exercise]
     
     @Environment(\.modelContext) private var modelContext
     
@@ -264,6 +269,10 @@ struct ActiveWorkoutView: View {
     var madeAnyChanges: Bool {
         return workout.name != "" || workout.notes != "" || hasAnyExercises
     }
+    var sortedExercises: [WorkoutExercise] {
+        workout.exercises.sorted { $0.order < $1.order }
+    }
+    
     var body: some View {
         NavigationStack {
             Form {
@@ -272,8 +281,18 @@ struct ActiveWorkoutView: View {
                 // TODO: cleanup
                 // TODO: after workout summary!
                 VStack(alignment: .center) {
-                    Text(timerManager.elapsedTime.formatted)
-                        .font(.system(.largeTitle, design: .rounded, weight: .semibold))
+                    Group {
+                        if timerManager.isRunning {
+                            Text(TimeDataSource<Date>.currentDate, format: .stopwatch(startingAt: .now.addingTimeInterval(-timerManager.elapsedTime), maxPrecision: .seconds(1)))
+                        } else {
+                            Text(Date.now, format: .stopwatch(startingAt: .now.addingTimeInterval(-timerManager.elapsedTime), maxPrecision: .seconds(1)))
+                                
+                            
+                        }
+                    }
+                    .font(.system(.largeTitle, design: .rounded, weight: .semibold))
+//                    Text(timerManager.elapsedTime.formatted)
+//                        .font(.system(.largeTitle, design: .rounded, weight: .semibold))
                     HStack {
                         Button {
                             if madeAnyChanges {
@@ -312,7 +331,7 @@ struct ActiveWorkoutView: View {
                     TextField("Notes", text: $workout.notes)
                 }
                 Section {
-                    ForEach(workout.exercises) { exercise in
+                    ForEach(sortedExercises) { exercise in
                         NavigationLink {
                             WorkoutExerciseView(exercise: exercise, active: true)
                         } label: {
@@ -325,10 +344,21 @@ struct ActiveWorkoutView: View {
                         }
                     }
                     .onDelete { indexSet in
-                        workout.exercises.remove(atOffsets: indexSet)
+                        var updateExercises =
+                        sortedExercises
+                        updateExercises.remove(atOffsets: indexSet)
+                        for (idx, exercise) in updateExercises.enumerated() {
+                            exercise.order = idx
+                        }
+                        workout.exercises = updateExercises
                     }
-                    .onMove { indices, newOffset in
-                        workout.exercises.move(fromOffsets: indices, toOffset: newOffset)
+                    .onMove { indexSet, newOffset in
+                        var updateExercises = sortedExercises
+                        updateExercises.move(fromOffsets: indexSet, toOffset: newOffset)
+                        
+                        for (idx, exercise) in updateExercises.enumerated() {
+                            exercise.order = idx
+                        }
                     }
                     
                     Button {
@@ -337,19 +367,19 @@ struct ActiveWorkoutView: View {
                         Label("Add Exercises", systemImage: "plus")
                     }
                     .sheet(isPresented: $isAddingExercises) {
-                        SelectExercisesView(onDone: { selected in
+                        SelectExercisesView(exercises: exercises, onDone: { selected in
                             for exercise in selected {
-                                let workoutExercise = WorkoutExercise(exercise: exercise)
+                                let workoutExercise = WorkoutExercise(exercise: exercise, order: workout.exercises.count)
                                 // TODO: check
                                 let lastWorkoutExercise = workoutExercises.filter {
-                                    $0.exercise == exercise && $0.workout! != workout && !$0.workout!.active
+                                    $0.exercise == exercise && $0.workout != nil && $0.workout! != workout && !$0.workout!.active
                                 }.sorted {
                                     $0.workout!.date > $1.workout!.date
                                 }.first
                                 
                                 if let lastWorkoutExercise {
                                     for set in lastWorkoutExercise.sets {
-                                        workoutExercise.sets.append(WorkoutSet(reps: set.reps, weight: set.weight, time: set.time, distance: set.distance))
+                                        workoutExercise.sets.append(WorkoutSet(order: set.order, reps: set.reps, weight: set.weight, time: set.time, distance: set.distance))
                                     }
                                 }
                                 

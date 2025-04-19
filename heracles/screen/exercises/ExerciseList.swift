@@ -8,9 +8,11 @@
 import SwiftUI
 import UIKit
 import SwiftData
+import Observation
+
 // Wrapper for UITableView in SwiftUI
 struct TableViewWrapper<Content: View, T>: UIViewControllerRepresentable {
-    @ObservedObject var data: TableViewData<T> // Observable class
+    var data: TableViewData<T> // Observable class
     var onSelect: ((T) -> Void)? = nil
     var isSelected: ((T) -> Bool)? = nil
     @ViewBuilder let content: (T) -> Content
@@ -28,6 +30,7 @@ struct TableViewWrapper<Content: View, T>: UIViewControllerRepresentable {
         tableViewController.tableView.allowsMultipleSelection = onSelect != nil
         return tableViewController
     }
+    
     
     func updateUIViewController(_ uiViewController: UITableViewController, context: Context) {
         uiViewController.tableView.reloadData()
@@ -81,8 +84,9 @@ struct TableViewWrapper<Content: View, T>: UIViewControllerRepresentable {
 }
 
 // ObservableObject to trigger updates
-class TableViewData<T>: ObservableObject {
-    @Published var sections: [(title: String, items: [T])]
+@Observable
+class TableViewData<T> {
+    var sections: [(title: String, items: [T])]
     
     init(sections: [(title: String, items: [T])] = []) {
         self.sections = sections
@@ -137,10 +141,10 @@ struct ExerciseList: View {
     var selectedGroup: MuscleGroup?
     var recents: Bool = false
     var customs: Bool = false
-    @Query var exercises: [Exercise]
-    @Query var workouts: [Workout] // optimize in future!
+    var exercises: [Exercise]
+    var workouts: [Workout] // optimize in future!
     @State var searchText = ""
-    @StateObject private var tableData = TableViewData<Exercise>() // Holds table data
+    @State private var tableData = TableViewData<Exercise>() // Holds table data
     @State private var selectedEquipment: Set<Equipment> = .init( Equipment.allCases)
     
     @State private var selectedMuscles: Set<Muscle> = .init(Muscle.allCases)
@@ -229,56 +233,78 @@ struct ExerciseList: View {
             }
         }
     }
-    
+    // TODO: possibly optimize this function futher
     private func updateGroupedExercises() {
+        // Use a single pass approach for filtering
+        let filtered = exercises.filter { exercise in
+            // Combine all filter conditions with short-circuit evaluation
+            (searchText.isEmpty || exercise.name.localizedCaseInsensitiveContains(searchText.trimmingCharacters(in: .whitespacesAndNewlines))) &&
+            (selectedEquipment.contains(where: { equipment in
+                exercise.equipment.isEmpty || exercise.equipment.contains(equipment)
+            })) &&
+            (recents ? false : // Skip this filter for recents
+                customs ? exercise.custom : // Only custom exercises
+                selectedGroup == nil || exercise.primaryMuscles.contains(where: { muscle in muscle_to_group[muscle] == selectedGroup }))
+        }
+        
         if recents {
-            let filtered = workouts
-                .sorted {$0.date < $1.date}
+            // Process recents with better performance
+            let recentExercises = workouts
+                .sorted(by: { $0.date > $1.date }) // Reverse sort to get latest first
+                .prefix(50) // Limit initial processing to recent workouts
                 .flatMap { $0.exercises }
-                .map { $0.exercise } // WorkoutExercise -> Exercise
-                .removingDuplicates()
-                .filter { exercise in
-                    searchText.isEmpty || exercise.name.localizedCaseInsensitiveContains(searchText)
-                }
-                .filter { exercise in
-                    selectedEquipment.contains(where: { equipment in
-                        exercise.equipment.contains(equipment)
-                    })
-                }
-            tableData.sections = [("", filtered)]
+                .map { $0.exercise }
+            
+            // Use a set for faster duplicate elimination
+            var uniqueExercises = Set<Exercise>()
+            let recentFiltered = recentExercises.filter { exercise in
+                // Add to set and check if it was already there
+                let isNew = uniqueExercises.insert(exercise).inserted
+                // Only keep new items that also match other filters
+                return isNew &&
+                       (searchText.isEmpty || exercise.name.localizedCaseInsensitiveContains(searchText)) &&
+                       selectedEquipment.contains(where: { equipment in
+                           exercise.equipment.contains(equipment)
+                       })
+            }
+            
+            tableData.sections = [("", recentFiltered)]
             return
         }
-        let filtered = exercises.filter { exercise in
-            if let selectedGroup {
-                return exercise.primaryMuscles.contains(where: { muscle in muscle_to_group[muscle] == selectedGroup })
-            }
-            if customs {
-                
-                return exercise.custom
-            }
-            return true
+
+        // Early exit if nothing to display
+        if filtered.isEmpty {
+            tableData.sections = []
+            return
         }
-            .filter { exercise in
-                searchText.isEmpty || exercise.name.localizedCaseInsensitiveContains(searchText)
-            }
-            .filter { exercise in
-                selectedEquipment.contains(where: { equipment in
-                    exercise.equipment.isEmpty || exercise.equipment.contains(equipment) // FIXME!
-                })
-            }
+        
+        // Use Dictionary(grouping:) just once and sort the result
+        let sorted = filtered
             .sorted { $0.name < $1.name }
         
-        let dict = Dictionary(grouping: filtered, by: { String($0.name.prefix(1)) })
-        let sorted = dict.sorted { $0.key < $1.key }.map { (title: $0.key, items: $0.value) }
-        
-        tableData.sections = sorted // Trigger UI update
+        // Only create sections if we have results
+        if !sorted.isEmpty {
+            // Create dictionary in one pass with first letter as key
+            var dict = [String: [Exercise]]()
+            for exercise in sorted {
+                let key = String(exercise.name.prefix(1).uppercased())
+                dict[key, default: []].append(exercise)
+            }
+            
+            // Convert to section format
+            tableData.sections = dict.sorted { $0.key < $1.key }
+                .map { (title: $0.key, items: $0.value) }
+        } else {
+            tableData.sections = []
+        }
     }
+
 }
 
 
 #Preview {
     NavigationStack {
-        ExerciseList(customs: true)
+        ExerciseList(exercises: [], workouts: [])
             .modelContainer(for: Exercise.self, inMemory: true) { result in
                 do {
                     let container = try result.get()

@@ -119,7 +119,7 @@ struct ExerciseChartsCardView : View {
     
     var filteredWorkoutExercises: [WorkoutExercise] {
         workoutsExercises.filter {
-            $0.exercise == exercise && !$0.workout!.active
+            $0.exercise == exercise && $0.workout != nil && !$0.workout!.active
         }
         .sorted {
             $0.workout!.date > $1.workout!.date

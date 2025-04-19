@@ -1,10 +1,10 @@
 import SwiftUI
 // TODO: start calendar on monday!
 struct MiniWorkoutCalendarView: View {
-    let workouts: [Workout]
+    var workouts: [Workout]
     
     private let currentDate = Date()
-    private let calendar = Calendar(identifier: .gregorian) // TODO!
+    private let calendar = Calendar.current
     private var monthStart: Date {
         calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate))!
     }
@@ -51,7 +51,7 @@ struct MiniWorkoutCalendarView: View {
     }
     
     private var weekdaySymbols: [String] {
-        calendar.shortWeekdaySymbols
+        return calendar.shortWeekdaySymbols
     }
     
     private func daysInMonth() -> [Date?] {

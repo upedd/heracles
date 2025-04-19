@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-
+import SwiftData
 // possibly lots of overlapping with ActiveWorkout and WorkoutEditor!
 
 
@@ -19,6 +19,7 @@ struct NewWorkoutView: View {
     @State private var hasCustomDuration = false
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Query private var exercises: [Exercise]
     
     var suggestedDuration: TimeInterval {
         workout.endDate.timeIntervalSince(workout.date)
@@ -31,6 +32,9 @@ struct NewWorkoutView: View {
         workout.endDate = date ?? Date()
     }
     
+    var sortedExercises: [WorkoutExercise] {
+        workout.exercises.sorted { $0.order < $1.order }
+    }
     var body: some View {
         Form {
             Section {
@@ -71,7 +75,7 @@ struct NewWorkoutView: View {
             }
             
             Section("Exercises") {
-                ForEach(workout.exercises) { exercise in
+                ForEach(sortedExercises) { exercise in
                     NavigationLink {
                         WorkoutExerciseView(exercise: exercise, active: false)
                     } label: {
@@ -80,21 +84,32 @@ struct NewWorkoutView: View {
                     }
                 }
                 .onDelete { indexSet in
-                    workout.exercises.remove(atOffsets: indexSet)
+                    var updateExercises =
+                    sortedExercises
+                    updateExercises.remove(atOffsets: indexSet)
+                    for (idx, exercise) in updateExercises.enumerated() {
+                        exercise.order = idx
+                    }
+                    workout.exercises = updateExercises
                 }
-                .onMove { indices, newOffset in
-                    workout.exercises.move(fromOffsets: indices, toOffset: newOffset)
+                .onMove { indexSet, newOffset in
+                    var updateExercises = sortedExercises
+                    updateExercises.move(fromOffsets: indexSet, toOffset: newOffset)
+                    
+                    for (idx, exercise) in updateExercises.enumerated() {
+                        exercise.order = idx
+                    }
                 }
-
+                
                 Button {
                     isAddingExercises.toggle()
                 } label: {
                     Label("Add Exercises", systemImage: "plus")
                 }
                 .sheet(isPresented: $isAddingExercises) {
-                    SelectExercisesView(onDone: { selected in
+                    SelectExercisesView(exercises: exercises, onDone: { selected in
                         for exercise in selected {
-                            workout.exercises.append(WorkoutExercise(exercise: exercise))
+                            workout.exercises.append(WorkoutExercise(exercise: exercise, order: workout.exercises.count))
                         }
                     })
                 }

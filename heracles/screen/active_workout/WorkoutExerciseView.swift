@@ -126,6 +126,13 @@ struct WorkoutExerciseSetIndex : View {
                         .foregroundStyle(.cyan)
                 }
             }
+            .contextMenu {
+                Picker("Set Type", selection: $set.type) {
+                    ForEach(SetType.allCases, id: \.rawValue) { type in
+                        Text(type.rawValue).tag(type)
+                    }
+                }
+            }
             .frame(width: 20)
             .padding(.trailing, 10)
             .font(.system(.body, design: .rounded, weight: .medium))
@@ -566,7 +573,7 @@ struct WorkoutExerciseSetView : View  {
     
     private var repsText: Binding<String> {
         Binding {
-            set.reps != nil ? "\(set.reps!)" : ""
+            set.reps != nil ? "\(set.reps!)" : "0"
         } set: { newValue in
             if exercise.exercise.trackReps {
                 set.reps = Int(newValue) ?? 0
@@ -664,7 +671,7 @@ struct WorkoutExerciseSetView : View  {
                         Text("km")
                     }
                     
-                    if exercise.exercise.trackWeight && !isInTemplate {
+                    if exercise.exercise.trackWeight {
                         WorkoutExerciseSetInput(set: set, label: "weight", targetFocusState: WorkoutExerciseFocusState(setIdx: rawIdx, fieldIdx: .weight), text: weightText, selection: $weightTextSelection, focusedField: $focusedField)
                             .customKeyboard(.weightKeyboard)
                             .onCustomSubmit {
@@ -757,9 +764,7 @@ struct WorkoutExerciseSetView : View  {
                         
                     }
                     if exercise.exercise.trackReps {
-                        if !isInTemplate {
-                            Text("×")
-                        }
+                        Text("×")
                         WorkoutExerciseSetInput(set: set, label: "reps", targetFocusState: WorkoutExerciseFocusState(setIdx: rawIdx, fieldIdx: .reps), text: repsText, selection: $repsTextSelection, focusedField: $focusedField)
                             .customKeyboard(.repsKeyboard)
                             .onCustomSubmit {
@@ -779,9 +784,6 @@ struct WorkoutExerciseSetView : View  {
                                     set.RPE = 8.5
                                 }
                             }
-                        if isInTemplate {
-                            Text("reps")
-                        }
                     }
                     if set.RPE != nil {
                         Text("RPE")
@@ -989,14 +991,15 @@ struct WorkoutExerciseView: View {
         
         var body: some View {
             Button {
-                if let last = exercise.sets.last {
-                    exercise.sets.append(.init(reps: last.reps, weight: last.weight, time: last.time, distance: last.distance))
+                let sortedSets = exercise.sets.sorted(by: {$0.order < $1.order})
+                if let last = sortedSets.last {
+                    exercise.sets.append(.init(order: exercise.sets.count, reps: last.reps, weight: last.weight, time: last.time, distance: last.distance))
                 } else {
-                    exercise.sets.append(.init())
+                    exercise.sets.append(.init(order: exercise.sets.count))
                 }
                 
                 if !active {
-                    exercise.sets.last!.completed = true
+                    sortedSets.last?.completed = true
                 }
                 
             } label: {
@@ -1022,7 +1025,7 @@ struct WorkoutExerciseView: View {
         var body : some View {
             HStack(alignment: .top) {
                 VStack {
-                    ForEach(exercise.sets) { set in
+                    ForEach(exercise.sets.sorted(by: {$0.order < $1.order})) { set in
                         Text(set.formatted)
                     }
                 }
@@ -1038,7 +1041,7 @@ struct WorkoutExerciseView: View {
     
     var setsWithIdx: [(WorkoutSet, Int)] {
         var idx = 0
-        return exercise.sets.map { set in
+        return sortedSets.map { set in
             if set.type == .working {
                 idx += 1
             }
@@ -1062,6 +1065,14 @@ struct WorkoutExerciseView: View {
     
     @FocusState var focusedField: WorkoutExerciseFocusState?
     @ObservedObject var stopwatchTimerManager = TimerManager.make(id: "stopwatch")
+    
+    var sortedSets: [WorkoutSet] {
+        exercise.sets.sorted { $0.order < $1.order }
+    }
+    
+    @State private var showDeleteAlert = false
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.presentationMode) var presentationMode
     var body: some View {
         List {
             //            Section("Pinned notes") {
@@ -1077,10 +1088,20 @@ struct WorkoutExerciseView: View {
                     
                 }
                 .onDelete(perform: { indexSet in
-                    exercise.sets.remove(atOffsets: indexSet)
+                    var updateSets = sortedSets
+                    
+                    updateSets.remove(atOffsets: indexSet)
+                    for (idx, set) in updateSets.enumerated() {
+                        set.order = idx
+                    }
+                    exercise.sets = updateSets
                 })
                 .onMove(perform: { indices, newOffset in
-                    exercise.sets.move(fromOffsets: indices, toOffset: newOffset)
+                    var updateSets = sortedSets
+                    updateSets.move(fromOffsets: indices, toOffset: newOffset)
+                    for (idx, set) in updateSets.enumerated() {
+                        set.order = idx
+                    }
                 })
                 AddSetButton(exercise: exercise, active: active)
             }
@@ -1098,7 +1119,7 @@ struct WorkoutExerciseView: View {
         }
         .onChange(of: stopwatchTimerManager.elapsedTime) {
             if let focusedField {
-                exercise.sets[focusedField.setIdx].time = stopwatchTimerManager.elapsedTime
+                sortedSets[focusedField.setIdx].time = stopwatchTimerManager.elapsedTime
             }
         }
         .sheet(isPresented: $showInfoSheet) {
@@ -1110,6 +1131,22 @@ struct WorkoutExerciseView: View {
         .toolbarTitleDisplayMode(.inline)
         .environment(\.defaultMinListRowHeight, 0)
         .environment(\.editMode, $editMode)
+        .alert("Delete exercise \"\(exercise.exercise.name)\" from \(exercise.workout != nil ? "workout" : "template")?", isPresented:$showDeleteAlert, actions: {
+            Button("Delete", role: .destructive) {
+                if let workout = exercise.workout {
+                    workout.exercises.removeAll(where: { $0 == exercise })
+                }
+                if let template = exercise.template {
+                    template.exercises.removeAll(where: { $0 == exercise })
+                }
+                modelContext.delete(exercise)
+                presentationMode.wrappedValue.dismiss()
+            }
+        }, message: {
+            if exercise.sets.count > 0 {
+                Text("This will delete all sets from this exercise.")
+            }
+        })
         .toolbar {
             if editMode == .active {
                 Button {
@@ -1130,6 +1167,11 @@ struct WorkoutExerciseView: View {
                         activeState = true
                     } label: {
                         Label("Edit", systemImage: "pencil")
+                    }
+                    Button(role: .destructive) {
+                        showDeleteAlert.toggle()
+                    } label: {
+                        Label(exercise.workout != nil ? "Delete from Workout" : "Delete from Template", systemImage: "trash")
                     }
                 } label: {
                     Label("More", systemImage: "ellipsis.circle")
@@ -1168,30 +1210,30 @@ struct WorkoutExerciseView: View {
     
     exercise.video = "https://www.youtube.com/watch?v=U5zrloYWwxw"
     
-    let workout_exercise = WorkoutExercise(exercise: exercise, sets: [
-        .init(reps: 8, weight: 60),
-        .init(reps: 8, weight: 70),
-        .init(reps: 6, weight: 70)
+    let workout_exercise = WorkoutExercise(exercise: exercise, order: 0, sets: [
+        .init(order: 0, reps: 8, weight: 60),
+        .init(order: 1, reps: 8, weight: 70),
+        .init(order: 2, reps: 6, weight: 70)
     ])
     workout_exercise.sets[0].type = .warmup
     workout_exercise.sets[1].type = .working
     workout_exercise.sets[2].type = .cooldown
     
     let workout_exercises: [WorkoutExercise] = [
-        .init(exercise: exercise, sets: [
-            .init(reps: 8, weight: 60),
-            .init(reps: 8, weight: 70),
-            .init(reps: 6, weight: 70)
+        .init(exercise: exercise, order: 0, sets: [
+            .init(order: 0, reps: 8, weight: 60),
+            .init(order: 1, reps: 8, weight: 70),
+            .init(order: 2, reps: 6, weight: 70)
         ]),
-        .init(exercise: exercise, sets: [
-            .init(reps: 8, weight: 60),
-            .init(reps: 8, weight: 70),
-            .init(reps: 6, weight: 70)
+        .init(exercise: exercise, order: 1, sets: [
+            .init(order: 0, reps: 8, weight: 60),
+            .init(order: 1, reps: 8, weight: 70),
+            .init(order: 2, reps: 6, weight: 70)
         ]),
-        .init(exercise: exercise, sets: [
-            .init(reps: 8, weight: 60),
-            .init(reps: 8, weight: 70),
-            .init(reps: 6, weight: 70)
+        .init(exercise: exercise, order: 2, sets: [
+            .init(order: 0, reps: 8, weight: 60),
+            .init(order: 1, reps: 8, weight: 70),
+            .init(order: 2, reps: 6, weight: 70)
         ]),
     ]
     

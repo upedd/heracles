@@ -12,27 +12,30 @@ import SwiftData
 // TODO: hiding exercises?
 
 struct ExercisesScreen: View {
+    @Query var exercises: [Exercise]
+    @Query var workouts: [Workout]
+    @State private var showNewExercise = false
     var body: some View {
         // TODO: split view instead for better support of landscape mode!
         NavigationStack {
             List {
                 Section {
                     NavigationLink {
-                        ExerciseList(selectedGroup: nil)
+                        ExerciseList(selectedGroup: nil, exercises: exercises, workouts: workouts)
                             .navigationTitle("All Exercises")
                     } label: {
                         
                         Label("All", systemImage: "list.bullet")
                     }
                     NavigationLink {
-                        ExerciseList(selectedGroup: nil, recents: true)
+                        ExerciseList(selectedGroup: nil, recents: true, exercises: exercises, workouts: workouts)
                             .navigationTitle("Recent Exercises")
                     } label: {
                         
                         Label("Recent", systemImage: "clock")
                     }
                     NavigationLink {
-                        ExerciseList(selectedGroup: nil, customs: true)
+                        ExerciseList(selectedGroup: nil, customs: true, exercises: exercises, workouts: workouts)
                             .navigationTitle("Custom Exercises")
                     } label: {
                         Label("Custom", systemImage: "star")
@@ -42,7 +45,7 @@ struct ExercisesScreen: View {
                 Section {
                     ForEach(MuscleGroup.allCases, id: \.self) { group in
                         NavigationLink {
-                            ExerciseList(selectedGroup: group)
+                            ExerciseList(selectedGroup: group, exercises: exercises, workouts: workouts)
                                 .navigationTitle("\(group.rawValue.capitalized) Exercises")
                         } label: {
                             Label {
@@ -57,7 +60,16 @@ struct ExercisesScreen: View {
                 }
             }
             .navigationTitle("Exercises")
-            
+            .toolbar {
+                Button {
+                    showNewExercise = true
+                } label: {
+                    Image(systemName: "plus")
+                }
+            }
+            .sheet(isPresented: $showNewExercise) {
+                NewExerciseView()
+            }
         }
     }
 }

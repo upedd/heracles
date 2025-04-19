@@ -8,6 +8,7 @@
 import SwiftUI
 import Charts
 
+// design: maybe add redo workout button, but it could be bit confusing
 
 struct WorkoutMuscleDistributionChart : View {
     var data: [(group: MuscleGroup, value: Double)]
@@ -56,12 +57,11 @@ extension Array<WorkoutExercise> {
             }
         }
         let total = distribution.values.reduce(0, +)
-        let result = distribution.map { (group: $0.key, value: $0.value / total) }
+        let result = distribution.map { (group: $0.key, value: $0.value / total) }.sorted(by: { $0.group.rawValue < $1.group.rawValue })
         return result
     }
 }
 
-// FIXME: random changes when exericses are distributted equally!
 struct WorkoutIconView : View {
     var exercises: [WorkoutExercise]
     
@@ -99,8 +99,7 @@ struct WorkoutIconView : View {
     }
 }
 
-// TODO: more statistics about muscles
-// TODO: tweak visuals
+// TODO: more statistics
 // TODO: name!!!!?!?!
 struct WorkoutExerciseLinkLink : View {
     var exercise: WorkoutExercise
@@ -112,7 +111,7 @@ struct WorkoutExerciseLinkLink : View {
             VStack(alignment: .leading) {
                 Text(exercise.exercise.name)
                     .font(.body)
-                ForEach(exercise.sets) { set in
+                ForEach(exercise.sets.sorted(by: {$0.order < $1.order})) { set in
                     Text(set.formatted)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -124,6 +123,7 @@ struct WorkoutExerciseLinkLink : View {
 
 struct WorkoutView: View {
     var workout: Workout
+    var exercises: [Exercise]
     @State private var isEditing = false
     @State private var showWorkoutInfoEditor = false
     @State private var isAddingExercises = false
@@ -132,6 +132,25 @@ struct WorkoutView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var showDeleteAlert = false
+    @State private var showNewTemplateView = false
+    
+    var totalVolume: Double {
+        var volume: Double = 0
+        for exercise in workout.exercises {
+            guard exercise.exercise.trackReps && exercise.exercise.trackWeight else {
+                continue
+            }
+            for set in exercise.sets {
+                volume += set.weight! * Double(set.reps!)
+            }
+        }
+        return volume
+    }
+    
+    var sortedExercises: [WorkoutExercise] {
+        return workout.exercises.sorted { $0.order < $1.order }
+    }
+    
     var body: some View {
         
             List {
@@ -168,7 +187,7 @@ struct WorkoutView: View {
                         VStack(alignment: .leading) {
                             Text("Total Volume")
                                 .font(.body)
-                            Text("400kg") // TODO: calculate
+                            Text("\(totalVolume.formatted()) kg")
                                 .font(.system(.title, design: .rounded))
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -193,14 +212,25 @@ struct WorkoutView: View {
                 
                 
                 Section {
-                    ForEach(workout.exercises) { exercise in
+                    ForEach(sortedExercises) { exercise in
                         WorkoutExerciseLinkLink(exercise: exercise)
                     }
                     .onDelete { indexSet in
-                        workout.exercises.remove(atOffsets: indexSet)
+                        var updateExercises =
+                        sortedExercises
+                        updateExercises.remove(atOffsets: indexSet)
+                        for (idx, exercise) in updateExercises.enumerated() {
+                            exercise.order = idx
+                        }
+                        workout.exercises = updateExercises
                     }
                     .onMove { indexSet, newOffset in
-                        workout.exercises.move(fromOffsets: indexSet, toOffset: newOffset)
+                        var updateExercises = sortedExercises
+                        updateExercises.move(fromOffsets: indexSet, toOffset: newOffset)
+                        
+                        for (idx, exercise) in updateExercises.enumerated() {
+                            exercise.order = idx
+                        }
                     }
                     if isEditing {
                         Button {
@@ -209,9 +239,9 @@ struct WorkoutView: View {
                             Label("Add Exercises", systemImage: "plus")
                         }
                         .sheet(isPresented: $isAddingExercises) {
-                            SelectExercisesView(onDone: { selected in
+                            SelectExercisesView(exercises: exercises, onDone: { selected in
                                 for exercise in selected {
-                                    workout.exercises.append(WorkoutExercise(exercise: exercise))
+                                    workout.exercises.append(WorkoutExercise(exercise: exercise, order: workout.exercises.count))
                                 }
                             })
                         }
@@ -245,12 +275,14 @@ struct WorkoutView: View {
                                 isEditing.toggle()
                             }
                         }
+                        Button("Save as Template", systemImage: "plus.square.on.square") {
+                            showNewTemplateView.toggle()
+                        }
                         Button("Delete Workout", systemImage: "trash", role: .destructive) {
                             showDeleteAlert.toggle()
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
-                            
                     }
                 }
             }
@@ -258,6 +290,17 @@ struct WorkoutView: View {
                 NavigationStack {
                     WorkoutEditorView(workout: workout)
                 }
+            }
+            .sheet(isPresented: $showNewTemplateView) {
+                // deep copy
+                let exercises: [WorkoutExercise] = workout.exercises.map { exercise in
+                    let newExercise = WorkoutExercise(exercise: exercise.exercise, order: exercise.order)
+                    newExercise.sets = exercise.sets.map {
+                        WorkoutSet(order: $0.order, reps: $0.reps, weight: $0.weight, time: $0.time, distance: $0.distance)
+                    }
+                    return newExercise
+                }
+                NewWorkoutTemplateView(name: workout.name, workoutExercises: exercises)
             }
             .alert("Delete workout \"\(workout.name)\"?", isPresented: $showDeleteAlert) {
                 Button("Delete", role: .destructive) {
@@ -275,6 +318,6 @@ struct WorkoutView: View {
 
 #Preview {
      NavigationStack {
-         WorkoutView(workout: Workout.sample)
+         WorkoutView(workout: Workout.sample, exercises: [])
     }
 }

@@ -464,12 +464,14 @@ final class WorkoutSet {
     var RPE: Double? = nil
     var completed = false
     var type = SetType.working
+    var order: Int
     
-    init(reps: Int? = nil, weight: Double? = nil, time: TimeInterval? = nil, distance: Double? = nil) {
+    init(order: Int, reps: Int? = nil, weight: Double? = nil, time: TimeInterval? = nil, distance: Double? = nil) {
         self.reps = reps
         self.weight = weight
         self.time = time
         self.distance = distance
+        self.order = order
     }
     var formatted: String {
         // TODO: better formatting!
@@ -499,7 +501,7 @@ final class WorkoutSet {
     }
     
     static var sample: WorkoutSet {
-        return WorkoutSet(reps: Int.random(in: 4...15), weight: Double(Int.random(in: 2...12)) * 10.0)
+        return WorkoutSet(order: 0, reps: Int.random(in: 4...15), weight: Double(Int.random(in: 2...12)) * 10.0)
     }
 }
 
@@ -509,8 +511,9 @@ final class WorkoutSet {
 final class WorkoutTemplate {
     var name: String
     var exercises: [WorkoutExercise]
-    
-    init(name: String, exercises: [WorkoutExercise]) {
+    var order: Int
+    init(order: Int, name: String, exercises: [WorkoutExercise]) {
+        self.order = order
         self.name = name
         self.exercises = exercises
     }
@@ -521,7 +524,7 @@ final class WorkoutTemplate {
             exercises.append(WorkoutExercise.sample)
         }
         var templateName = ["Chest Day", "Leg Day", "Back Day", "Shoulder Day", "Arm Day", "Upper Workout", "Lower Workout", "Full Body 1", "Full Body 2", "Full Body 3"].randomElement()!
-        return WorkoutTemplate(name: templateName, exercises: exercises)
+        return WorkoutTemplate(order: 0, name: templateName, exercises: exercises)
     }
 }
 
@@ -739,23 +742,27 @@ var workoutTemplatesSampleData: [(name: String, exercises: [(name: String, sets:
             let existingWorkoutTemplates = try container.mainContext.fetchCount(descriptor)
             guard existingWorkoutTemplates == 0 else { return }
             preloadExercises(container)
-        
+            var idx = 0
             for (name, exercises) in workoutTemplatesSampleData {
+                let template = WorkoutTemplate(order: idx, name: name, exercises: [])
                 var workoutExercises: [WorkoutExercise] = []
                 for (exerciseName, sets, repsInSet) in exercises {
                     let exerciseDescriptor = FetchDescriptor<Exercise>(predicate: #Predicate { $0.name == exerciseName })
                     let exercise = try container.mainContext.fetch(exerciseDescriptor)
                     if let firstExercise = exercise.first {
-                        let sets = (0..<sets).map { _ in
-                            WorkoutSet(reps: repsInSet, weight: 0)
+                        let sets = (0..<sets).map { idx in
+                            WorkoutSet(order: idx, reps: repsInSet, weight: 0)
                         }
-                        workoutExercises.append(WorkoutExercise(exercise: firstExercise, sets: sets))
+                        let workoutExercise = WorkoutExercise(exercise: firstExercise, order: workoutExercises.count, sets: sets)
+                        workoutExercise.template = template
+                        workoutExercises.append(workoutExercise)
                     } else {
                         print("Exercise \(exerciseName) not found in database")
                     }
                     
                 }
-                let template = WorkoutTemplate(name: name, exercises: workoutExercises)
+                template.exercises = workoutExercises
+                idx += 1
                 container.mainContext.insert(template)
             }
         } catch {
@@ -767,10 +774,13 @@ final class WorkoutExercise {
     var exercise: Exercise
     @Relationship(deleteRule: .cascade) var sets: [WorkoutSet]
     var workout: Workout?
+    var template: WorkoutTemplate?
+    var order: Int
     
-    init(exercise: Exercise, sets: [WorkoutSet] = []) {
+    init(exercise: Exercise, order: Int, sets: [WorkoutSet] = []) {
         self.exercise = exercise
         self.sets = sets
+        self.order = order
     }
     
     static var sample: WorkoutExercise {
@@ -778,8 +788,10 @@ final class WorkoutExercise {
         for _ in 0..<Int.random(in: 3...6) {
             sets.append(WorkoutSet.sample)
         }
-        return WorkoutExercise(exercise: Exercise.sample, sets: sets)
+        return WorkoutExercise(exercise: Exercise.sample, order: 0, sets: sets)
     }
+    
+    
 }
 
 

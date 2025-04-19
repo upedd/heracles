@@ -6,10 +6,11 @@
 //
 
 import SwiftUI
+import SwiftData
 // TODO: visuals consistency
 struct WorkoutExerciseLink : View {
     var workoutExercise: WorkoutExercise
-    
+    var exercises: [Exercise]
     var body: some View {
         ZStack {
             VStack(alignment: .leading) {
@@ -41,7 +42,7 @@ struct WorkoutExerciseLink : View {
             .clipShape(RoundedRectangle(cornerRadius: 10))
             
             NavigationLink {
-                WorkoutView(workout: workoutExercise.workout!)
+                WorkoutView(workout: workoutExercise.workout!, exercises: exercises)
             } label: {
                 EmptyView()
 
@@ -74,12 +75,13 @@ struct ExerciseHistoryView: View {
     var groupedExercises: [String: [WorkoutExercise]] {
         Dictionary(grouping: workoutExercises.filter { !$0.workout!.active }, by: {$0.workout!.date.formatted(.dateTime.month(.wide).year())})
     }
+    @Query private var exercises: [Exercise]
     
     var body: some View {
         List(Array(groupedExercises.keys), id: \.self) { group in
             Section {
                 ForEach(groupedExercises[group]!) { workoutExercise in
-                    WorkoutExerciseLink(workoutExercise: workoutExercise)
+                    WorkoutExerciseLink(workoutExercise: workoutExercise, exercises: exercises)
                 }
             } header: {
                 ExerciseHistorySectionHeaderView(title: group)
@@ -103,20 +105,20 @@ struct ExerciseHistoryView: View {
     let exercise = Exercise(name: "Bench Press", type: .weight_reps, primaryMuscleGroup: .chest, secondaryMuscleGroups: [.triceps, .shoulders])
     
     let workout_exercises: [WorkoutExercise] = [
-        .init(exercise: exercise, sets: [
-            .init(reps: 8, weight: 60),
-            .init(reps: 8, weight: 70),
-            .init(reps: 6, weight: 70)
+        .init(exercise: exercise, order: 0, sets: [
+            .init(order: 0, reps: 8, weight: 60),
+            .init(order: 1, reps: 8, weight: 70),
+            .init(order: 2, reps: 6, weight: 70)
         ]),
-        .init(exercise: exercise, sets: [
-            .init(reps: 8, weight: 60),
-            .init(reps: 8, weight: 70),
-            .init(reps: 6, weight: 70)
+        .init(exercise: exercise, order: 1, sets: [
+            .init(order: 0, reps: 8, weight: 60),
+            .init(order: 1, reps: 8, weight: 70),
+            .init(order: 2, reps: 6, weight: 70)
         ]),
-        .init(exercise: exercise, sets: [
-            .init(reps: 8, weight: 60),
-            .init(reps: 8, weight: 70),
-            .init(reps: 6, weight: 70)
+        .init(exercise: exercise, order: 2, sets: [
+            .init(order: 0, reps: 8, weight: 60),
+            .init(order: 1, reps: 8, weight: 70),
+            .init(order: 2, reps: 6, weight: 70)
         ]),
     ]
     

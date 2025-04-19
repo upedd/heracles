@@ -13,6 +13,7 @@ import SwiftData
 // TODO: maybe do something on longpress workout?
 // TODO: some filtering
 // TODO: month by month statstics look fitness app
+// TODO: undo?
 
 struct HistoryScreen: View {
     struct DateHeader: View {
@@ -33,37 +34,40 @@ struct HistoryScreen: View {
     
     struct WorkoutItem: View {
         var workout: Workout
+        var exercises: [Exercise]
         var body: some View {
             ZStack {
-                HStack(alignment: .center) {
+                HStack(alignment: .top) {
                     WorkoutIconView(exercises: workout.exercises)
-                        .frame(width: 50, height: 50)
+                        .frame(width: 45, height: 45)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                         .padding(.trailing, 10)
                     VStack(alignment: .leading) {
-                        HStack(alignment: .top){
+                        HStack(alignment: .firstTextBaseline){
                             Text(workout.name)
-                                .font(.body)
+                                .font(.system(.headline, weight: .medium))
                             Spacer()
                                 Text(workout.date.formatted(.dateTime))
-                                    .font(.system(.caption2, design: .rounded))
+                                    .font(.system(.caption))
                                     .foregroundStyle(Color(.secondaryLabel))
                         }
                         .padding(.bottom, 1)
-                        
-                        Text("\(workout.exercises.map(\.exercise.name).joined(separator: ", "))")
-                            .font(.system(.footnote, design: .rounded, weight: .light))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
+                        ForEach(workout.exercises) { exercise in
+                            
+                            Text("\(exercise.sets.count) × \(exercise.exercise.name)")
+                                .font(.subheadline)
+                                .foregroundStyle(.primary)
+                        }
                     }
                     
                 }
-                .padding()
+                .padding(.vertical, 10)
+                .padding(.horizontal, 16)
                 .background(Material.regular)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             
                 NavigationLink {
-                    WorkoutView(workout: workout)
+                    WorkoutView(workout: workout, exercises: exercises)
                 } label: {
                     EmptyView()
     
@@ -78,49 +82,47 @@ struct HistoryScreen: View {
     var startEmptyWorkout: () -> Void
     
     @Query(sort: \Workout.date, order: .reverse) private var workouts: [Workout]
+    
+    var loggedWorkouts: [Workout] {
+        workouts.filter { !$0.active }
+    }
     @Environment(\.modelContext) private var modelContext
     var groupedWorkouts: [Date: [Workout]] {
-        Dictionary(grouping: workouts.filter {!$0.active}, by: {
+        Dictionary(grouping: loggedWorkouts.filter {!$0.active}, by: {
             let components = Calendar.current.dateComponents([.month, .year], from: $0.date)
             return Calendar.current.date(from: components)!
         })
     }
     
     @State private var selectedDateComponents: DateComponents?
-    
-    private var selectedDate: Date? {
-        selectedDateComponents?.date
-    }
-
     @State private var isShowingCalendar = false
-    
     private var selectedDateWorkouts: [Workout]? {
-            if let selectedDate {
-                return workouts.filter {
+        if let selectedDate = selectedDateComponents?.date {
+                return loggedWorkouts.filter {
                     !$0.active && Calendar.current.isDate($0.date, inSameDayAs: selectedDate)
                 }
             }
             return nil
     }
-    // TODO: workout deletion warning!
+    
+    private var calendarDecorationsDateComponents: Set<DateComponents> {
+        return Set(loggedWorkouts.map { workout in
+            Calendar.current.dateComponents([.day, .month, .year], from: workout.date)
+        })
+    }
     
     @State private var isLoggingPastWorkout = false
+    @Query private var exercises: [Exercise]
     
     var body: some View {
         NavigationStack {
-            ScrollViewReader { proxy in
                 
                 List {
-                    
                     if isShowingCalendar {
-                        if !workouts.isEmpty { // TODO: calendar doesn't respond to changes
-                            CalendarView(workouts: workouts, interval: DateInterval(start: .distantPast, end: .distantFuture), dateSelected: $selectedDateComponents)
-                                .frame(height: 430)
-                                .listRowSeparator(.hidden)
+                        if !loggedWorkouts.isEmpty {
+                            CalendarView(selection: $selectedDateComponents)
+                                .decorating(calendarDecorationsDateComponents, color: .blue)
                         }
-    
-                            
-                            //.padding()
                         if selectedDateWorkouts != nil {
                             if selectedDateWorkouts!.isEmpty {
                                 // think about this, see hig guidelines!
@@ -135,7 +137,7 @@ struct HistoryScreen: View {
                                 .listRowSeparator(.hidden)
                             } else {
                                 ForEach(selectedDateWorkouts!) { workout in
-                                    WorkoutItem(workout: workout)
+                                    WorkoutItem(workout: workout, exercises: exercises)
                                         .id(workout)
                                     
                                 }
@@ -153,7 +155,7 @@ struct HistoryScreen: View {
                             ForEach(Array(groupedWorkouts.keys).sorted().reversed(), id: \.self) { key in
                                 Section {
                                     ForEach(groupedWorkouts[key]!) { workout in
-                                        WorkoutItem(workout: workout)
+                                        WorkoutItem(workout: workout, exercises: exercises)
                                             .id(workout)
                                     }
                                     
@@ -172,7 +174,7 @@ struct HistoryScreen: View {
                     }
                 }
                 .overlay {
-                    if workouts.isEmpty {
+                    if loggedWorkouts.isEmpty && !isShowingCalendar {
                         ContentUnavailableView {
                             Label("No Workouts", systemImage: "archivebox")
                         } description: {
@@ -190,7 +192,6 @@ struct HistoryScreen: View {
                             .buttonStyle(.borderless)
                         }
                     }
-                }
             }
             
             .toolbar {
@@ -228,13 +229,13 @@ struct HistoryScreen: View {
             }
             .sheet(isPresented: $isLoggingPastWorkout) {
                 NavigationStack {
-                    NewWorkoutView(date: selectedDate)
+                    NewWorkoutView(date: selectedDateComponents?.date ?? Date.now)
+                        
                 }
             }
             .listStyle(.plain)
             .listRowSeparator(.hidden)
             .navigationTitle("History")
-            
         }
     }
 }
@@ -248,7 +249,7 @@ struct HistoryScreen: View {
         do {
             let container = try result.get()
             preloadExercises(container)
-            for i in 0..<0 {
+            for i in 0..<10 {
                 container.mainContext.insert(Workout.sample)
             }
         } catch {
