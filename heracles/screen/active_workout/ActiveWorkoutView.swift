@@ -63,6 +63,7 @@ struct SelectExercisesView: View {
     @State private var grouping: Grouping = .name
     @State private var showNewExercise = false
     
+    
     var body: some View {
         NavigationStack {
             VStack {
@@ -176,9 +177,14 @@ struct SelectExercisesView: View {
                 searchText.isEmpty || exercise.name.localizedCaseInsensitiveContains(searchText.trimmingCharacters(in: .whitespacesAndNewlines))
             }
             .filter { exercise in
-                selectedEquipment.contains(where: { equipment in
-                    exercise.equipment.contains(equipment) || exercise.equipment.isEmpty
-                })
+                
+                if selectedEquipment == Set(Equipment.allCases) { // temp
+                    return true
+                } else {
+                    return selectedEquipment.contains(where: { equipment in
+                        exercise.equipment.contains(equipment)
+                    })
+                }
             }
             .sorted { $0.name < $1.name }
         if grouping == .name {
@@ -290,6 +296,13 @@ struct ActiveWorkoutView: View {
                             
                         }
                     }
+                    .onAppear {
+                        // hack!
+                        if timerManager.isRunning {
+                            timerManager.pause()
+                            timerManager.start()
+                        }
+                    }
                     .font(.system(.largeTitle, design: .rounded, weight: .semibold))
 //                    Text(timerManager.elapsedTime.formatted)
 //                        .font(.system(.largeTitle, design: .rounded, weight: .semibold))
@@ -333,7 +346,7 @@ struct ActiveWorkoutView: View {
                 Section {
                     ForEach(sortedExercises) { exercise in
                         NavigationLink {
-                            WorkoutExerciseView(exercise: exercise, active: true)
+                            WorkoutExerciseView(exercise: exercise, workoutExercises: workoutExercises, active: true)
                         } label: {
                             HStack {
                                 Text(exercise.exercise.name)
@@ -404,11 +417,17 @@ struct ActiveWorkoutView: View {
             .confirmationDialog("Finish Workout?", isPresented: $showFinishWarning) {
                 Button("Finish Workout") {
                     workout.endDate = Date.now
+                    workout.duration = timerManager.elapsedTime
+                    for workoutExercise in workoutExercises {
+                        workoutExercise.sets.removeAll { set in
+                            !set.completed
+                        }
+                    }
                     workout.active = false
                 }
             } message: {
                 // TODO: add message?
-                //Text("All uncompleted sets will be discarded.")
+                Text("All uncompleted sets will be discarded.")
             }
             .onChange(of: workout.exercises) {
                 timerManager.start()

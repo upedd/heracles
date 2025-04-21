@@ -20,7 +20,7 @@ struct NewWorkoutView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query private var exercises: [Exercise]
-    
+    @Query private var workoutExercises: [WorkoutExercise]
     var suggestedDuration: TimeInterval {
         workout.endDate.timeIntervalSince(workout.date)
     }
@@ -77,7 +77,7 @@ struct NewWorkoutView: View {
             Section("Exercises") {
                 ForEach(sortedExercises) { exercise in
                     NavigationLink {
-                        WorkoutExerciseView(exercise: exercise, active: false)
+                        WorkoutExerciseView(exercise: exercise, workoutExercises: workoutExercises, active: false)
                     } label: {
                         Text(exercise.exercise.name)
                             

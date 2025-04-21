@@ -119,6 +119,13 @@ struct ContentView: View {
                                 Text(Date.now, format: .stopwatch(startingAt: .now.addingTimeInterval(-timerManager.elapsedTime), maxPrecision: .seconds(1)))
                             }
                         }
+//                        .onAppear {
+//                            // hack!
+//                            if timerManager.isRunning {
+//                                timerManager.pause()
+//                                timerManager.start()
+//                            }
+//                        }
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
 

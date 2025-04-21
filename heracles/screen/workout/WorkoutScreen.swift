@@ -83,13 +83,14 @@ struct TemplateView : View {
     var sortedExercises: [WorkoutExercise] {
         template.exercises.sorted {$0.order < $1.order}
     }
+    @Query private var workoutExercises: [WorkoutExercise]
     
     var startWorkout: ([WorkoutExercise], String?) -> Void
     var body : some View {
         List {
             ForEach(sortedExercises) { exercise in
                 NavigationLink {
-                    WorkoutExerciseView(exercise: exercise, active: false, isInTemplate: true)
+                    WorkoutExerciseView(exercise: exercise, workoutExercises: workoutExercises, active: false, isInTemplate: true)
                 } label: {
                     Text(exercise.exercise.name)
                 }
@@ -163,6 +164,7 @@ struct TemplateView : View {
             }
             ToolbarItem(placement: .bottomBar) {
                 Button {
+                    dismiss()
                     startWorkout(template.exercises, template.name)
                 } label: {
                     Label("Start Workout", systemImage: "plus.circle.fill")
@@ -242,7 +244,7 @@ struct WorkoutTemplateCard : View {
                     Text("\(template.exercises.count) exercises")
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .font(.system(.subheadline, design: .rounded))
-                        .opacity(0.9)
+                        //.opacity(0.9)
                 }
             }
             
@@ -266,6 +268,7 @@ struct NewWorkoutTemplateView : View {
     @State var workoutExercises: [WorkoutExercise]
     @Query private var templates: [WorkoutTemplate]
     @Query private var exercises: [Exercise]
+    @Query private var globalWorkoutExercises: [WorkoutExercise]
     @State private var isAddingExercises = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -282,7 +285,7 @@ struct NewWorkoutTemplateView : View {
                 Section {
                     ForEach(sortedExercises) { exercise in
                         NavigationLink {
-                            WorkoutExerciseView(exercise: exercise, active: false, isInTemplate: true)
+                            WorkoutExerciseView(exercise: exercise, workoutExercises: globalWorkoutExercises, active: false, isInTemplate: true)
                         } label: {
                             Text(exercise.exercise.name)
                         }

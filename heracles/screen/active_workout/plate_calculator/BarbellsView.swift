@@ -10,20 +10,23 @@ import SwiftData
 
 struct BarbellView: View {
     @Bindable var barbell: Barbell
-    @Binding var selectedBarbell: Barbell
+    @Binding var selectedBarbell: Barbell?
+    @Environment(Settings.self) private var settings
     
     var body : some View {
         HStack {
             Text(barbell.label)
             Spacer()
-            Text("\(barbell.weight.formatted()) kg")
+            Text("\(barbell.weight.formatted()) \(settings.weightUnit.short())")
                 .foregroundStyle(.secondary)
-            Button {
-                selectedBarbell = barbell
-            } label: {
-                if selectedBarbell == barbell {
-                    Image(systemName: "checkmark")
-                        .font(.headline)
+            if selectedBarbell != nil {
+                Button {
+                    selectedBarbell = barbell
+                } label: {
+                    if selectedBarbell == barbell {
+                        Image(systemName: "checkmark")
+                            .font(.headline)
+                    }
                 }
             }
         }
@@ -37,18 +40,19 @@ struct NewBarbellView : View {
     
     @State private var showCancellationWarning = false
     @Environment(\.dismiss) private var dismiss
+    @Environment(Settings.self) private var settings
     
     var body : some View {
         NavigationStack {
             Form {
-                    TextField("Label", text: $label)
+                TextField("Label", text: $label)
                 LabeledContent("Weight") {
                     Stepper {
                         HStack {
                             TextField("weight", value: $weight, format: .number)
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
-                            Text("kg")
+                            Text("\(settings.weightUnit.short())")
                                 .foregroundStyle(.secondary)
                         }
                     } onIncrement: {
@@ -100,7 +104,7 @@ struct NewBarbellView : View {
 
 struct BarbellsView : View {
     var barbells: [Barbell]
-    @Binding var selectedBarbell: Barbell
+    @Binding var selectedBarbell: Barbell?
     @Environment(\.modelContext) private var modelContext
     
     var listContents: [Barbell] {
@@ -159,5 +163,6 @@ struct BarbellsView : View {
             print("Failed to create model container.")
         }
     }
+    .environment(Settings())
     
 }

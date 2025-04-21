@@ -21,11 +21,17 @@ struct ExerciseChartsCardView : View {
         var type: ChartType
         var function: ChartFunction
         
-        var lastMonthData: [ChartData] {
-            data.filter {
-                $0.date > Date.now.addingTimeInterval(-60*60*24*14)
+        // get last 7 entry points and fake them into being next to each other
+        var previewData: [ChartData] {
+            var result: [ChartData] = []
+            let date = Date.now
+            for idx in 0..<min(7, data.count) {
+                result.append(ChartData(value: data[data.count - idx - 1].value, date: date.addingTimeInterval(24 * 60 * 60 * Double(-idx))))
             }
+            //print(result)
+            return result
         }
+        @Environment(Settings.self) private var settings
         
         var body : some View {
             NavigationLink {
@@ -50,7 +56,7 @@ struct ExerciseChartsCardView : View {
                                 HStack(alignment: .firstTextBaseline) {
                                     Text(data.first!.value.formatted())
                                         .font(.system(.largeTitle, design: .rounded, weight: .medium))
-                                    Text("kg")
+                                    Text("\(settings.weightUnit.short())")
                                         .font(.headline.bold())
                                         .foregroundStyle(.secondary)
                                 }
@@ -60,8 +66,9 @@ struct ExerciseChartsCardView : View {
                         Spacer()
                         if !data.isEmpty {
                             Chart {
-                                ForEach(lastMonthData, id: \.date) { entry in
-                                    if (entry.date == data.first!.date) {
+                                ForEach(previewData, id: \.date) { entry in
+                                    if (Calendar.current.isDate(entry.date, equalTo: previewData.first?.date ?? Date(), toGranularity: .day)) {
+                                        
                                         if type == .line {
                                             LineMark(
                                                 x: .value("Date", entry.date, unit: .day),
@@ -98,7 +105,7 @@ struct ExerciseChartsCardView : View {
                                     }
                                 }
                             }
-                            .chartXVisibleDomain(length: 86400 * 14)
+                            .chartXVisibleDomain(length: 86400 * 7)
                             .chartXAxis(.hidden)
                             .chartYAxis(.hidden)
                             .frame(width: 70, height: 50)
@@ -141,7 +148,7 @@ struct ExerciseChartsCardView : View {
             .map {
                 let bestSet = $0.sets.max { $0.weight! < $1.weight! }
                 return ChartData(
-                    value: bestSet!.weight!,
+                    value: bestSet?.weight ?? 0,
                     date: $0.workout!.date
                 )
             }
@@ -152,7 +159,7 @@ struct ExerciseChartsCardView : View {
             .map {
                 let bestSet = $0.sets.max { $0.weight! < $1.weight! }
                 return ChartData(
-                    value: bestSet!.weight! * Double(bestSet!.reps!),
+                    value: (bestSet?.weight ?? 0) * Double(bestSet?.reps ?? 0),
                     date: $0.workout!.date
                 )
             }
@@ -167,13 +174,15 @@ struct ExerciseChartsCardView : View {
                     } else {
                         oneRepMax(reps: $0.reps!, weight: $0.weight!)
                     }
-                }.max()!
+                }.max() ?? 0
                 return ChartData(
                     value: maxRPE.rounded(), // TODO: better rounding!
                     date: $0.workout!.date
                 )
             }
     }
+    
+    @Environment(Settings.self) private var settings
     
     var body: some View {
         ScrollView {
@@ -185,10 +194,10 @@ struct ExerciseChartsCardView : View {
                 }
             } else if !filteredWorkoutExercises.isEmpty {
                 VStack(spacing: 10) {
-                    ChartCard(title: "Volume", data: volumeData, unit: "kg", type: .bar, function: .sum)
-                    ChartCard(title: "Estimated 1RM", data: estimated1RMData, unit: "kg", type: .line, function: .max)
-                    ChartCard(title: "Best Weight", data: bestWeightData, unit: "kg", type: .line, function: .max)
-                    ChartCard(title: "Best Set Volume", data: bestSetData, unit: "kg", type: .line, function: .max)
+                    ChartCard(title: "Volume", data: volumeData, unit: settings.weightUnit.short(), type: .bar, function: .sum)
+                    ChartCard(title: "Estimated 1RM", data: estimated1RMData, unit: settings.weightUnit.short(), type: .line, function: .max)
+                    ChartCard(title: "Best Weight", data: bestWeightData, unit: settings.weightUnit.short(), type: .line, function: .max)
+                    ChartCard(title: "Best Set Volume", data: bestSetData, unit: settings.weightUnit.short(), type: .line, function: .max)
                 }
             } else {
                 ContentUnavailableView {
@@ -230,4 +239,5 @@ struct ExerciseChartsView: View {
             print("Error!")
         }
     }
+    .environment(Settings())
 }

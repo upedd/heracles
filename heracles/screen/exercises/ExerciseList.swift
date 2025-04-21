@@ -101,22 +101,53 @@ struct ExerciseFilterSheet : View {
     
     @Environment(\.dismiss) var dismiss
     
-    @State private var editMode: EditMode = .active
-    
     var body: some View {
         NavigationStack {
-            List(selection: $selectedEquipment) {
+            List {
                 Section("Equipment") {
                     ForEach(Equipment.allCases, id: \.self) { equipment in
-                        Text(equipment.displayName())
+                        HStack {
+                            Text(equipment.displayName())
+                            Spacer()
+                            Button {
+                                if selectedEquipment.contains(equipment) {
+                                    selectedEquipment.remove(equipment)
+                                } else {
+                                    selectedEquipment.insert(equipment)
+                                }
+                            } label: {
+                                if selectedEquipment.contains(equipment) {
+                                    Image(systemName: "checkmark")
+                                        .font(.headline)
+                                }
+                            }
+                        }
                     }
                 }
             }
+            .navigationTitle("Filters")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                Button("Done") {
-                    dismiss()
+                ToolbarItem(placement: .topBarLeading) {
+                    if selectedEquipment.isEmpty {
+                        Button("Select All") {
+                            for equipment in selectedEquipment {
+                                selectedEquipment.insert(equipment)
+                            }
+                        }
+                    } else {
+                        Button("Deselect All") {
+                            selectedEquipment.removeAll()
+                        }
+                    }
                 }
-            }.environment(\.editMode, $editMode)
+            
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
             
         }
         
@@ -238,8 +269,9 @@ struct ExerciseList: View {
         // Use a single pass approach for filtering
         let filtered = exercises.filter { exercise in
             // Combine all filter conditions with short-circuit evaluation
+            // temp!
             (searchText.isEmpty || exercise.name.localizedCaseInsensitiveContains(searchText.trimmingCharacters(in: .whitespacesAndNewlines))) &&
-            (selectedEquipment.contains(where: { equipment in
+            (selectedEquipment == Set(Equipment.allCases) || selectedEquipment.contains(where: { equipment in
                 exercise.equipment.isEmpty || exercise.equipment.contains(equipment)
             })) &&
             (recents ? false : // Skip this filter for recents

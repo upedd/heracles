@@ -56,10 +56,12 @@ struct PlatesView: View {
                 $0.weight > $1.weight
             }
     }
+    @Environment(Settings.self) private var settings
+    
     var body : some View {
         VStack {
             if realWeight != targetWeight {
-                Text("No solution for \(targetWeight.formatted()) kg.\nShowing closest possible weight: \(realWeight.formatted()) kg")
+                Text("No solution for \(targetWeight.formatted()) \(settings.weightUnit.short()).\nShowing closest possible weight: \(realWeight.formatted()) \(settings.weightUnit.short())")
                     .font(.headline)
                     .foregroundStyle(Color.red)
                     .multilineTextAlignment(.center)
@@ -98,17 +100,17 @@ struct PlateCalculator: View {
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \Barbell.weight) private var barbells: [Barbell]
     @Query(sort: \Plate.weight, order: .reverse) var availablePlates: [Plate] = []
-    @State private var selectedBarbell: Barbell = Barbell(weight: 0, label: "") // TODO: temp
-    
+    @State private var selectedBarbell: Barbell?
+    @Environment(Settings.self) private var settings
     
     var solved: Candidate { // TODO: possibly async
-        return plateCalculatorSolverCache.getCandidate(for: (weight - selectedBarbell.weight) / 2, plates: availablePlates)
+        return plateCalculatorSolverCache.getCandidate(for: (weight - (selectedBarbell?.weight ?? 20)) / 2, plates: availablePlates)
     }
     
     var body: some View {
         NavigationStack {
             Form {
-                PlatesView(targetWeight: weight, realWeight: solved.usedWeight * 2 + selectedBarbell.weight, candidate: solved)
+                PlatesView(targetWeight: weight, realWeight: solved.usedWeight * 2 + (selectedBarbell?.weight ?? 20), candidate: solved)
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets())
                 
@@ -119,7 +121,7 @@ struct PlateCalculator: View {
                         HStack {
                             Text("Barbell")
                             Spacer()
-                            Text("\(selectedBarbell.label) (\(selectedBarbell.weight.formatted()) kg)")
+                            Text("\(selectedBarbell?.label ?? "Standard") (\(selectedBarbell?.weight.formatted() ?? "20") \(settings.weightUnit.short()))")
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -155,8 +157,17 @@ struct PlateCalculator: View {
             
         }
         .onAppear {
-            if selectedBarbell.weight == 0 && selectedBarbell.label == "" {
-                selectedBarbell = barbells.first ?? Barbell(weight: 0, label: "")
+            
+            if selectedBarbell == nil {
+                for barbell in barbells {
+                    if barbell.weight == 20 && barbell.label == "Standard" {
+                        selectedBarbell = barbell
+                        break
+                    }
+                }
+                if selectedBarbell == nil {
+                    selectedBarbell = barbells.first
+                }
             }
         }
         
@@ -180,4 +191,5 @@ struct PlateCalculator: View {
             print("Failed to create model container.")
         }
     }
+    .environment(Settings())
 }

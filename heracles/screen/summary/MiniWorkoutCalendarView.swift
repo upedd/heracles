@@ -1,4 +1,5 @@
 import SwiftUI
+import Algorithms
 // TODO: start calendar on monday!
 struct MiniWorkoutCalendarView: View {
     var workouts: [Workout]
@@ -51,12 +52,14 @@ struct MiniWorkoutCalendarView: View {
     }
     
     private var weekdaySymbols: [String] {
-        return calendar.shortWeekdaySymbols
+        var symbols = calendar.shortWeekdaySymbols // TODO: respect locale?
+        let _ = symbols.rotate(toStartAt: 1)
+        return symbols
     }
     
     private func daysInMonth() -> [Date?] {
         let firstDayOfMonth = monthStart
-        let firstWeekday = calendar.component(.weekday, from: firstDayOfMonth) - 1
+        let firstWeekday = calendar.component(.weekday, from: firstDayOfMonth) - 2
         
         let daysInMonth = calendar.range(of: .day, in: .month, for: firstDayOfMonth)!.count
         

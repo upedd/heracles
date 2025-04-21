@@ -10,13 +10,14 @@ import SwiftData
 
 struct AvailablePlateView: View {
     @Bindable var plate: Plate
+    @Environment(Settings.self) private var settings
     
     var body: some View {
         HStack {
             Image(systemName: "circle.fill")
                 .imageScale(.large)
                 .foregroundStyle(plate.color.getAsColor())
-            Text("\(plate.weight.formatted()) kg")
+            Text("\(plate.weight.formatted()) \(settings.weightUnit.short())")
             Spacer()
             Stepper {
                 
@@ -94,6 +95,7 @@ struct NewPlateView : View {
     
     @Environment(\.dismiss) private var dismiss
     
+    @Environment(Settings.self) private var settings
     var body : some View {
         NavigationStack {
             Form {
@@ -114,7 +116,7 @@ struct NewPlateView : View {
                                 TextField("weight", value: $weight, format: .number)
                                     .keyboardType(.decimalPad)
                                     .multilineTextAlignment(.trailing)
-                                Text("kg")
+                                Text("\(settings.weightUnit.short())")
                                     .foregroundStyle(.secondary)
                             }
                         } onIncrement: {
@@ -198,11 +200,21 @@ struct NewPlateView : View {
 struct AvailablePlatesView: View {
     var plates: [Plate]
     @State private var showNewPlate = false
+    @Environment(\.modelContext) private var modelContext
     
     var body: some View {
-        List(plates) { plate in
-            AvailablePlateView(plate: plate)
+        List {
+            ForEach(plates) {plate in
+                AvailablePlateView(plate: plate)
+            }
+            .onDelete { indexSet in
+                for index in indexSet {
+                    let plate = plates[index]
+                    modelContext.delete(plate)
+                }
+            }
         }
+        
         .navigationTitle("Available Plates")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -242,4 +254,5 @@ struct AvailablePlatesView: View {
             print("Failed to create model container.")
         }
     }
+    .environment(Settings())
 }

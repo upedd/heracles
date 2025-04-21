@@ -27,7 +27,7 @@ let e1rmTable: [[Double]] = [
 
 // Calculate 1rm based on reps, weight and rpe
 func oneRepMax(reps: Int, weight: Double, rpe: Double) -> Double {
-    let percentage = e1rmTable[Int(7 - (rpe * 2 - 13))][reps - 1]
+    let percentage = e1rmTable[Int(7 - (rpe * 2 - 13))][min(reps - 1, 11)]
     return weight * (percentage / 100)
 }
 

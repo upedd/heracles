@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Charts
+import SwiftData
 
 // design: maybe add redo workout button, but it could be bit confusing
 
@@ -103,16 +104,18 @@ struct WorkoutIconView : View {
 // TODO: name!!!!?!?!
 struct WorkoutExerciseLinkLink : View {
     var exercise: WorkoutExercise
+    var workoutExercises: [WorkoutExercise]
+    @Environment(Settings.self) private var settings
     
     var body : some View {
         NavigationLink {
-            WorkoutExerciseView(exercise: exercise, active: false)
+            WorkoutExerciseView(exercise: exercise, workoutExercises: workoutExercises, active: false)
         } label: {
             VStack(alignment: .leading) {
                 Text(exercise.exercise.name)
                     .font(.body)
                 ForEach(exercise.sets.sorted(by: {$0.order < $1.order})) { set in
-                    Text(set.formatted)
+                    Text(set.formatted(settings: settings))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -124,6 +127,7 @@ struct WorkoutExerciseLinkLink : View {
 struct WorkoutView: View {
     var workout: Workout
     var exercises: [Exercise]
+    @Query var workoutExercises: [WorkoutExercise] // move up!
     @State private var isEditing = false
     @State private var showWorkoutInfoEditor = false
     @State private var isAddingExercises = false
@@ -150,6 +154,8 @@ struct WorkoutView: View {
     var sortedExercises: [WorkoutExercise] {
         return workout.exercises.sorted { $0.order < $1.order }
     }
+    
+    @Environment(Settings.self) private var settings
     
     var body: some View {
         
@@ -187,7 +193,7 @@ struct WorkoutView: View {
                         VStack(alignment: .leading) {
                             Text("Total Volume")
                                 .font(.body)
-                            Text("\(totalVolume.formatted()) kg")
+                            Text("\(totalVolume.formatted()) \(settings.weightUnit.short())")
                                 .font(.system(.title, design: .rounded))
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -213,7 +219,7 @@ struct WorkoutView: View {
                 
                 Section {
                     ForEach(sortedExercises) { exercise in
-                        WorkoutExerciseLinkLink(exercise: exercise)
+                        WorkoutExerciseLinkLink(exercise: exercise, workoutExercises: workoutExercises)
                     }
                     .onDelete { indexSet in
                         var updateExercises =
@@ -320,4 +326,5 @@ struct WorkoutView: View {
      NavigationStack {
          WorkoutView(workout: Workout.sample, exercises: [])
     }
+     .environment(Settings())
 }

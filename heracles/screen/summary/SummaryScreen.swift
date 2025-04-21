@@ -8,7 +8,6 @@
 import SwiftUI
 import SwiftData
 import Charts
-import LicenseList
 // BIG TODO: customization!!!
 // possible ideas
 // workout heatmap or workouts per week
@@ -233,21 +232,21 @@ struct MuscleGroupsPieChart : View {
                 }
                 return .gray
             })
-            .chartBackground { chartProxy in
-                GeometryReader { geometry in
-                    if let anchor = chartProxy.plotFrame {
-                        let frame = geometry[anchor]
-                        VStack {
-                            Text("Most Trained")
-                                .font(.system(size: 8, weight: .semibold))
-                                .foregroundStyle(.secondary)
-                            Text(data.max { $0.volume < $1.volume }?.name ?? "")
-                                .font(.system(size: 11, weight: .semibold))
-                        }
-                        .position(x: frame.midX, y: frame.midY)
-                    }
-                }
-            }
+//            .chartBackground { chartProxy in
+//                GeometryReader { geometry in
+//                    if let anchor = chartProxy.plotFrame {
+//                        let frame = geometry[anchor]
+//                        VStack {
+//                            Text("Most Trained")
+//                                .font(.system(size: 8, weight: .semibold))
+//                                .foregroundStyle(.secondary)
+//                            Text(data.max { $0.volume < $1.volume }?.name ?? "")
+//                                .font(.system(size: 11, weight: .semibold))
+//                        }
+//                        .position(x: frame.midX, y: frame.midY)
+//                    }
+//                }
+//            }
         }
         
     }
@@ -312,7 +311,7 @@ struct StatsCompareView : View {
             return 1
         }
         if thisWeek < lastWeek {
-            return thisWeek / lastWeek
+            return max(thisWeek / lastWeek, 0.6) // temp
         } else {
             return 1
         }
@@ -326,11 +325,14 @@ struct StatsCompareView : View {
             return 1
         }
         if lastWeek < thisWeek {
-            return lastWeek / thisWeek
+            return max(lastWeek / thisWeek, 0.6) // temp
         } else {
             return 1
         }
     }
+    
+    @Environment(Settings.self) private var settings
+    
     var body : some View {
         if thisWeek == 0 && lastWeek == 0 {
             Text("No Data")
@@ -339,7 +341,7 @@ struct StatsCompareView : View {
         } else {
             GeometryReader { proxy in
                 VStack(alignment: .leading)  {
-                    Text("\(thisWeek.formatted()) kg")
+                    Text("\(thisWeek.rounded().formatted()) \(settings.weightUnit.short())")
                         .frame(alignment: .leading)
                         .font(.system(size: 24, weight: .semibold, design: .rounded))
                         .padding(.bottom, -1)
@@ -351,16 +353,14 @@ struct StatsCompareView : View {
                     }
                     .padding(.leading, thisWeekScaleFactor == 0 ? 0 : 6)
                     .frame(width: proxy.size.width, alignment: .leading)
-                    .background {
+                    .background(alignment: .leading) {
                         RoundedRectangle(cornerRadius: 5)
                             .fill(Color.accentColor)
                             .frame(width: proxy.size.width * thisWeekScaleFactor, alignment: .leading)
                     }
                     
-                    .padding(.bottom, 5)
                     
-                    
-                    Text("\(lastWeek.formatted()) kg")
+                    Text("\(lastWeek.rounded().formatted()) \(settings.weightUnit.short())")
                         .font(.system(size: 20, weight: .semibold, design: .rounded))
                         .padding(.bottom, -3)
                     HStack {
@@ -371,7 +371,7 @@ struct StatsCompareView : View {
                     }
                     .padding(.horizontal, lastWeekScaleFactor == 0 ? 0 : 6)
                     .frame(width: proxy.size.width, alignment: .leading)
-                    .background {
+                    .background(alignment: .leading) {
                         RoundedRectangle(cornerRadius: 5)
                             .fill(Color(.systemGray4))
                             .frame(width: proxy.size.width * lastWeekScaleFactor, alignment: .leading)
@@ -406,7 +406,7 @@ struct VolumeMiniChartView : View {
         let calendar = Calendar.current
         var dates = [Date]()
         
-        for i in -1..<6 { // TODO: hack
+        for i in 0..<7 {
             if let date = calendar.date(byAdding: .day, value: i, to: calendar.startOfDay(for: Date.now.startOfWeek)) {
                 dates.append(date)
             }
@@ -445,11 +445,13 @@ struct VolumeMiniChartView : View {
         }
         return (weekTotal, totals.map { ChartData(value: $0.value, date: $0.key) })
     }
+    @Environment(Settings.self) private var settings
+    
     var body: some View {
         VStack(alignment: .leading) {
             Text("This Week")
                 .font(.caption)
-            Text("\(data.0.formatted()) kg")
+            Text("\(data.0.rounded().formatted()) \(settings.weightUnit.short())")
                 .font(.system(size: 26, weight: .semibold, design: .rounded))
             
             Chart(data.1) { item in
@@ -475,46 +477,94 @@ struct VolumeMiniChartView : View {
 
 struct SettingsView : View {
     
-    @Query private var plates: [Plate]
-    @Query private var barbells: [Barbell]
-    @State private var defaultBarbell: Barbell = .init(weight: 20.0, label: "Standard")
-    private var showEquipmentResetWarning = false
+    @Query(sort: \Plate.weight, order: .reverse) private var plates: [Plate]
+    @Query(sort: \Barbell.weight, order: .reverse) private var barbells: [Barbell]
+    @Query private var workoutSets: [WorkoutSet]
+    @State private var showEquipmentResetWarning = false
     @Environment(\.modelContext) private var modelContext
+    @Environment(Settings.self) private var settings
     var body: some View {
         NavigationStack {
             List {
                 // TODO: more settings
                 Section("Equipment") {
                     NavigationLink {
-                        BarbellsView(barbells: barbells, selectedBarbell: $defaultBarbell)
+                        BarbellsView(barbells: barbells, selectedBarbell: .constant(nil))
                     } label: {
-                        HStack {
-                            Text("Default Barbell")
-                            Spacer()
-                            Text(defaultBarbell.label)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .onAppear {
-                        defaultBarbell = barbells.first! // TODO!!!!!
+                        Text("Barbells")
                     }
                     NavigationLink {
                         AvailablePlatesView(plates: plates)
                     } label: {
                         Text("Plates")
                     }
-                    
+                    Button("Restore Default Equipment", role: .destructive) {
+                        showEquipmentResetWarning.toggle()
+                    }
+                    .alert("Restore Default Equipment?", isPresented: $showEquipmentResetWarning) {
+                        Button("Restore", role: .destructive) {
+                            // FIXME: handle error
+                            try! modelContext.delete(model: Plate.self)
+                            try! modelContext.delete(model: Barbell.self)
+                            try! modelContext.save()
+                            preloadBarbells(modelContext.container, force: true)
+                            preloadPlates(modelContext.container, force: true)
+                        }
+                    } message: {
+                        Text("This action will erase irreversibly all your existing equipment data.")
+                    }
                 }
-                // TODO!
-                Section("Units") {
-                    Picker("Weight", selection: .constant(0)) {
-                        Text("Kilograms").tag(0)
-                        Text("Pounds").tag(1)
+                Section {
+                    @Bindable var settings = settings
+                    Picker("Weight", selection: $settings.weightUnit) {
+                        ForEach(WeightUnit.allCases, id: \.rawValue) { unit in
+                            Text(unit.rawValue.capitalized).tag(unit)
+                        }
                     }
-                    Picker("Distance", selection: .constant(0)) {
-                        Text("Kilometers").tag(0)
-                        Text("Miles").tag(1)
+                    .onChange(of: settings.weightUnit) { oldValue, newValue in
+                        guard oldValue != newValue else { return }
+                        for workoutSet in workoutSets {
+                            if let weight = workoutSet.weight {
+                                workoutSet.weight = roundToNearestMultiple(of: 0.25, value: weight * (newValue == .pounds ? 2.20462 : 0.453592))
+                            }
+                        }
                     }
+                    Picker("Distance", selection: $settings.distanceUnit) {
+                        ForEach(DistanceUnit.allCases, id: \.rawValue) { unit in
+                            Text(unit.rawValue.capitalized).tag(unit)
+                        }
+                    }
+                    .onChange(of: settings.distanceUnit) { oldValue, newValue in
+                        guard oldValue != newValue else { return }
+                        for workoutSet in workoutSets {
+                            if let distance = workoutSet.distance {
+                                workoutSet.distance = roundToNearestMultiple(of: 0.01, value: distance * (newValue == .miles ? 0.621371 : 1.60934))
+                            }
+                        }
+                    }
+                } header: {
+                  Text("Units")
+                } footer: {
+                    Text("Changes will automatically convert all logged values")
+                }
+                Section {
+                    NavigationLink("Privacy Policy") {
+                        PrivacyPolicyView()
+                    }
+                    NavigationLink("Terms of Service") {
+                        TermsOfServiceView()
+                    }
+                    #if DEBUG
+                    Button("Load Demo Data") {
+                        let start = Date.now
+                        print("Loading demo")
+                        try! modelContext.delete(model: Workout.self)
+                        try! modelContext.save()
+                        preloadDemoData(modelContext.container)
+                        let end = Date.now
+                        print("Loaded demo in \(end.timeIntervalSince(start)) seconds")
+                    }
+                    #endif
                 }
                 
             }
@@ -548,6 +598,7 @@ struct SettingsButton: View {
 
 struct TotalsCard : View {
     var workouts: [Workout]
+    @Environment(Settings.self) private var settings
     
     var data: (Int, Double, Double) {
         var count = 0
@@ -582,7 +633,7 @@ struct TotalsCard : View {
             VStack(alignment: .leading) {
                 Text("Volume")
                     .font(.subheadline)
-                Text("\(data.1.formatted()) kg")
+                Text("\(data.1.rounded().formatted()) \(settings.weightUnit.short())")
                     .font(.system(size: 26, weight: .semibold, design: .rounded))
             }
             Spacer()
@@ -682,5 +733,7 @@ struct SummaryScreen: View {
         } catch {
             print("Error!")
         }
+                
     }
+        .environment(Settings())
 }

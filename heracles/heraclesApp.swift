@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import ObservableDefaults
 
 @MainActor func preloadExercises(_ container: ModelContainer) {
     do {
@@ -34,8 +35,51 @@ import SwiftData
         }
 }
 
+enum WeightUnit : String, Codable, CaseIterable{
+    case kilograms
+    case pounds
+}
+
+enum DistanceUnit : String, Codable, CaseIterable {
+    case kilometers
+    case miles
+}
+
+extension WeightUnit {
+    func short() -> String {
+        // return short name for unit
+        switch self {
+            case .kilograms:
+            return "kg"
+        case .pounds:
+            return "lbs"
+        }
+    }
+}
+
+extension DistanceUnit {
+    func short() -> String {
+        switch self {
+        case .kilometers:
+            return "km"
+        case .miles:
+            return "mi"
+        }
+    }
+}
+
+@ObservableDefaults(autoInit: false)
+class Settings {
+    init() {
+        observerStarter()
+    }
+    var weightUnit: WeightUnit = Locale.current.measurementSystem == .metric ? .kilograms : .pounds
+    var distanceUnit: DistanceUnit = Locale.current.measurementSystem == .metric ? .kilometers : .miles
+}
+
 @main
 struct heraclesApp: App {
+    //@State private var settings = Settings()
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -51,5 +95,6 @@ struct heraclesApp: App {
                 print("Failed to create model container.")
             }
         }
+        .environment(Settings())
     }
 }

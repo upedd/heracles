@@ -11,6 +11,7 @@ import SwiftData
 struct WorkoutExerciseLink : View {
     var workoutExercise: WorkoutExercise
     var exercises: [Exercise]
+    @Environment(Settings.self) private var settings
     var body: some View {
         ZStack {
             VStack(alignment: .leading) {
@@ -31,7 +32,7 @@ struct WorkoutExerciseLink : View {
                 .padding(.bottom, 5)
                 ForEach(workoutExercise.sets) { set in
                     HStack {
-                        Text(set.formatted)
+                        Text(set.formatted(settings: settings))
                             .font(.subheadline)
                         
                     }
@@ -132,4 +133,5 @@ struct ExerciseHistoryView: View {
     workout_exercises[2].workout = workout2
     
     return ExerciseHistoryView(workoutExercises: workout_exercises)
+        .environment(Settings())
 }

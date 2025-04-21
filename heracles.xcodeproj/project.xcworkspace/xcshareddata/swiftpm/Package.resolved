@@ -1,5 +1,5 @@
 {
-  "originHash" : "c4bdc429801e80aa7651c28ffb6301d8e3779879242875a678ed76d783b76773",
+  "originHash" : "d2c8101759d81cccd73b3a3ee8403cb88346da0714af707fa6864cf6c612baf5",
   "pins" : [
     {
       "identity" : "customkeyboardkit",
@@ -35,6 +35,42 @@
       "state" : {
         "revision" : "7be14fd7942f6b215f4b1912315f9e67266cb082",
         "version" : "1.1.2"
+      }
+    },
+    {
+      "identity" : "observabledefaults",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/fatbobman/ObservableDefaults",
+      "state" : {
+        "revision" : "4740e2c39043b7daff946aa3bbec22e6a68850d3",
+        "version" : "0.6.2"
+      }
+    },
+    {
+      "identity" : "swift-algorithms",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-algorithms.git",
+      "state" : {
+        "revision" : "87e50f483c54e6efd60e885f7f5aa946cee68023",
+        "version" : "1.2.1"
+      }
+    },
+    {
+      "identity" : "swift-numerics",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-numerics.git",
+      "state" : {
+        "revision" : "e0ec0f5f3af6f3e4d5e7a19d2af26b481acb6ba8",
+        "version" : "1.0.3"
+      }
+    },
+    {
+      "identity" : "swift-syntax",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-syntax.git",
+      "state" : {
+        "revision" : "0687f71944021d616d34d922343dcef086855920",
+        "version" : "600.0.1"
       }
     },
     {

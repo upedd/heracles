@@ -168,6 +168,7 @@ struct ExerciseChart : View {
         var range: Range<Date>
         var distanceFromChart: CGFloat
         var functionName: String
+        @Environment(Settings.self) private var settings
         
         @State private var size: CGSize = .zero
         
@@ -180,7 +181,7 @@ struct ExerciseChart : View {
         
         var body : some View {
             Group {
-                ExerciseChartHeader(title: functionName, value: sum.formatted(), unit: "kg", range: range)
+                ExerciseChartHeader(title: functionName, value: sum.formatted(), unit: settings.weightUnit.short(), range: range)
                     .frame(minWidth: endX != nil ? endX! - x : 0, alignment: .leading)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 0.5)
@@ -259,7 +260,9 @@ struct ExerciseChart : View {
     @State private var yAxisValues: [Double]  = []
     
     func calculateYAxisValues() -> [Double] {
-        let data = visibleChartBars.map(\.value)
+        // TODO: temp fixes
+        var data = visibleChartBars.isEmpty ? chartBars.prefix(1).map(\.value) : visibleChartBars.map(\.value)
+        data.append(0)
         let minBins = NumberBins(data: data, desiredCount: 2).thresholds
         let autoBins = NumberBins(data: data).thresholds
         if autoBins.count > minBins.count {
@@ -333,6 +336,8 @@ struct ExerciseChart : View {
         return nil
     }
     
+    @Environment(Settings.self) private var settings
+    
     var body : some View {
         VStack {
             Picker("Date Range", selection: $rawInterval) {
@@ -341,7 +346,7 @@ struct ExerciseChart : View {
                 }
             }
             .pickerStyle(.segmented)
-            ExerciseChartHeader(title: function.name, value: visibleSum.formatted(), unit: "kg", range: currentDateRange)
+            ExerciseChartHeader(title: function.name, value: visibleSum.formatted(), unit: settings.weightUnit.short(), range: currentDateRange)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .opacity(selectedAmount != nil ? 0.0 : 1.0)
                 .accessibilityHidden(selectedAmount != nil)
@@ -379,9 +384,9 @@ struct ExerciseChart : View {
             .onChange(of: rawInterval) {
                 chartBars = makeChartBars()
                 visibleChartBars = getVisibleChartBars()
-                withAnimation {
+                //withAnimation {
                     yAxisValues = calculateYAxisValues()
-                }
+                //}
             }
             .chartScrollableAxes(.horizontal)
             .chartXVisibleDomain(length: interval.length)
@@ -429,7 +434,7 @@ struct ExerciseChart : View {
             }
             .chartXSelection(value: $rawSelectedDate)
             .chartXSelection(range: $rawSelectedRange)
-            .animation(.spring(), value: rawInterval)
+            //.animation(.spring(), value: rawInterval)
             .chartOverlay{ proxy in
                 GeometryReader { geometry in
                     let plotFrameGeometry = geometry[proxy.plotFrame!]
@@ -504,4 +509,5 @@ struct ExerciseChartView: View {
     NavigationStack {
         ExerciseChartView(title: "Volume", data: data, type: .bar, function: .sum)
     }
+    .environment(Settings())
 }

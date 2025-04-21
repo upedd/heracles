@@ -37,32 +37,34 @@ struct HistoryScreen: View {
         var exercises: [Exercise]
         var body: some View {
             ZStack {
-                HStack(alignment: .top) {
-                    WorkoutIconView(exercises: workout.exercises)
-                        .frame(width: 45, height: 45)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .padding(.trailing, 10)
-                    VStack(alignment: .leading) {
-                        HStack(alignment: .firstTextBaseline){
-                            Text(workout.name)
-                                .font(.system(.headline, weight: .medium))
-                            Spacer()
-                                Text(workout.date.formatted(.dateTime))
-                                    .font(.system(.caption))
+                VStack {
+                    HStack(alignment: .top) {
+                        WorkoutIconView(exercises: workout.exercises)
+                            .frame(width: 45, height: 45)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .padding(.trailing, 10)
+                        VStack(alignment: .leading) {
+                            HStack(alignment: .top) {
+                                Text(workout.name)
+                                    .font(.system(.headline, weight: .medium))
+                                Spacer()
+                                Text(workout.date.formatted(.dateTime.day().month(.defaultDigits).year()))
+                                    .font(.system(.caption, weight: .medium))
                                     .foregroundStyle(Color(.secondaryLabel))
+                            }
+                            .padding(.bottom, 1)
+                            ForEach(workout.exercises) { exercise in
+                                
+                                Text("\(exercise.sets.count) × \(exercise.exercise.name)")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.primary)
+                            }
                         }
-                        .padding(.bottom, 1)
-                        ForEach(workout.exercises) { exercise in
-                            
-                            Text("\(exercise.sets.count) × \(exercise.exercise.name)")
-                                .font(.subheadline)
-                                .foregroundStyle(.primary)
-                        }
+                        
                     }
-                    
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 16)
                 }
-                .padding(.vertical, 10)
-                .padding(.horizontal, 16)
                 .background(Material.regular)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             

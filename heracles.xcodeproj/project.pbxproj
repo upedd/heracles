@@ -10,7 +10,10 @@
 		640D54FD2D5EA922005BFB74 /* LNPopupUI in Frameworks */ = {isa = PBXBuildFile; productRef = 640D54FC2D5EA922005BFB74 /* LNPopupUI */; };
 		640D54FF2D5EA922005BFB74 /* LNPopupUI in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 640D54FC2D5EA922005BFB74 /* LNPopupUI */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		640D552E2D5F5DC9005BFB74 /* YouTubePlayerKit in Frameworks */ = {isa = PBXBuildFile; productRef = 640D552D2D5F5DC9005BFB74 /* YouTubePlayerKit */; };
+		641683BC2DB62A140043BDB3 /* README.md in Sources */ = {isa = PBXBuildFile; fileRef = 641683BB2DB62A100043BDB3 /* README.md */; };
 		641C5C222D6672190043D688 /* CustomKeyboardKit in Frameworks */ = {isa = PBXBuildFile; productRef = 641C5C212D6672190043D688 /* CustomKeyboardKit */; };
+		64A544E72DB54BBC00895A22 /* Algorithms in Frameworks */ = {isa = PBXBuildFile; productRef = 64A544E62DB54BBC00895A22 /* Algorithms */; };
+		64A544EE2DB5543300895A22 /* ObservableDefaults in Frameworks */ = {isa = PBXBuildFile; productRef = 64A544ED2DB5543300895A22 /* ObservableDefaults */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -45,10 +48,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		641683BB2DB62A100043BDB3 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		641EA5B62D5E6AC800F9F95D /* heracles.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = heracles.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		641EA5C82D5E6ACD00F9F95D /* heraclesTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = heraclesTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		641EA5D22D5E6ACD00F9F95D /* heraclesUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = heraclesUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		64A9FAF32D80DF3000EB87C5 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		64A9FAF32D80DF3000EB87C5 /* IDEAS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = IDEAS.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -87,7 +91,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				64A544E72DB54BBC00895A22 /* Algorithms in Frameworks */,
 				640D552E2D5F5DC9005BFB74 /* YouTubePlayerKit in Frameworks */,
+				64A544EE2DB5543300895A22 /* ObservableDefaults in Frameworks */,
 				640D54FD2D5EA922005BFB74 /* LNPopupUI in Frameworks */,
 				641C5C222D6672190043D688 /* CustomKeyboardKit in Frameworks */,
 			);
@@ -120,7 +126,8 @@
 		641EA5AD2D5E6AC800F9F95D = {
 			isa = PBXGroup;
 			children = (
-				64A9FAF32D80DF3000EB87C5 /* README.md */,
+				641683BB2DB62A100043BDB3 /* README.md */,
+				64A9FAF32D80DF3000EB87C5 /* IDEAS.md */,
 				641EA5B82D5E6AC800F9F95D /* heracles */,
 				641EA5CB2D5E6ACD00F9F95D /* heraclesTests */,
 				641EA5D52D5E6ACD00F9F95D /* heraclesUITests */,
@@ -164,6 +171,8 @@
 				640D54FC2D5EA922005BFB74 /* LNPopupUI */,
 				640D552D2D5F5DC9005BFB74 /* YouTubePlayerKit */,
 				641C5C212D6672190043D688 /* CustomKeyboardKit */,
+				64A544E62DB54BBC00895A22 /* Algorithms */,
+				64A544ED2DB5543300895A22 /* ObservableDefaults */,
 			);
 			productName = heracles;
 			productReference = 641EA5B62D5E6AC800F9F95D /* heracles.app */;
@@ -251,6 +260,8 @@
 				640D54F62D5EA819005BFB74 /* XCRemoteSwiftPackageReference "LNPopupUI" */,
 				640D552C2D5F5DC9005BFB74 /* XCRemoteSwiftPackageReference "YouTubePlayerKit" */,
 				641C5C1E2D6671310043D688 /* XCRemoteSwiftPackageReference "CustomKeyboardKit" */,
+				64A544E52DB54BBC00895A22 /* XCRemoteSwiftPackageReference "swift-algorithms" */,
+				64A544EC2DB5543300895A22 /* XCRemoteSwiftPackageReference "ObservableDefaults" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 641EA5B72D5E6AC800F9F95D /* Products */;
@@ -293,6 +304,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				641683BC2DB62A140043BDB3 /* README.md in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -478,9 +490,13 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.uped.heraclesapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -513,9 +529,13 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.uped.heraclesapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -657,6 +677,22 @@
 				minimumVersion = 1.1.1;
 			};
 		};
+		64A544E52DB54BBC00895A22 /* XCRemoteSwiftPackageReference "swift-algorithms" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-algorithms.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.1;
+			};
+		};
+		64A544EC2DB5543300895A22 /* XCRemoteSwiftPackageReference "ObservableDefaults" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/fatbobman/ObservableDefaults";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.6.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -679,6 +715,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 641C5C1E2D6671310043D688 /* XCRemoteSwiftPackageReference "CustomKeyboardKit" */;
 			productName = CustomKeyboardKit;
+		};
+		64A544E62DB54BBC00895A22 /* Algorithms */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 64A544E52DB54BBC00895A22 /* XCRemoteSwiftPackageReference "swift-algorithms" */;
+			productName = Algorithms;
+		};
+		64A544ED2DB5543300895A22 /* ObservableDefaults */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 64A544EC2DB5543300895A22 /* XCRemoteSwiftPackageReference "ObservableDefaults" */;
+			productName = ObservableDefaults;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -650,6 +650,7 @@ struct WorkoutExerciseSetView : View  {
     @State private var showRPEPicker = false
     @State private var showStopwatch = false
     @State private var showPlateCalculator = false
+    @Environment(Settings.self) private var settings
     var body: some View {
         HStack(alignment: .center) {
             WorkoutExerciseSetIndex(set: set, idx: idx, active: active)
@@ -668,7 +669,7 @@ struct WorkoutExerciseSetView : View  {
                                     distanceTextSelection = .init(range: distanceText.wrappedValue.startIndex..<distanceText.wrappedValue.endIndex)
                                 }
                             }
-                        Text("km")
+                        Text("\(settings.distanceUnit.short())")
                     }
                     
                     if exercise.exercise.trackWeight {
@@ -691,7 +692,7 @@ struct WorkoutExerciseSetView : View  {
                                     showPlateCalculator = true
                                 }
                             }
-                        Text("kg")
+                        Text("\(settings.weightUnit.short())")
                     }
                     
                     if exercise.exercise.trackDuration {
@@ -1021,12 +1022,13 @@ struct WorkoutExerciseView: View {
     // design: should link to workout?
     struct RecentsItem: View {
         var exercise: WorkoutExercise
+        @Environment(Settings.self) private var settings
         
         var body : some View {
             HStack(alignment: .top) {
-                VStack {
+                VStack(alignment: .leading) {
                     ForEach(exercise.sets.sorted(by: {$0.order < $1.order})) { set in
-                        Text(set.formatted)
+                        Text(set.formatted(settings: settings))
                     }
                 }
                 Spacer()
@@ -1050,10 +1052,11 @@ struct WorkoutExerciseView: View {
     }
     @State var editMode: EditMode = .inactive
     // TODO: better query, better name!
-    @Query var workoutExercises: [WorkoutExercise]
+    
+    var workoutExercises: [WorkoutExercise]
     var currentExerciseWorkoutExercises: [WorkoutExercise] {
         workoutExercises.filter {
-            $0.exercise == exercise.exercise && $0.workout != nil && $0.workout! != exercise.workout! && !$0.workout!.active
+            $0.exercise == exercise.exercise && $0.workout != nil && $0.workout! != exercise.workout && !$0.workout!.active
         }
     }
     
@@ -1083,8 +1086,8 @@ struct WorkoutExerciseView: View {
             
             Section("Sets") {
                 // MESS!!!
-                ForEach(Array(setsWithIdx.enumerated()), id: \.element.0) { rawIdx, element in
-                    WorkoutExerciseSetView(set: element.0, exercise: exercise, idx: element.1, active: activeState, rawIdx: rawIdx, focusedField: $focusedField, stopwatchTimerManager: stopwatchTimerManager, isInTemplate: isInTemplate)
+                ForEach(setsWithIdx, id: \.0) { element, idx in
+                    WorkoutExerciseSetView(set: element, exercise: exercise, idx: idx, active: activeState, rawIdx: element.order, focusedField: $focusedField, stopwatchTimerManager: stopwatchTimerManager, isInTemplate: isInTemplate)
                     
                 }
                 .onDelete(perform: { indexSet in
@@ -1245,7 +1248,8 @@ struct WorkoutExerciseView: View {
     }
     
     return NavigationStack {
-        WorkoutExerciseView(exercise: workout_exercise, active: true)
+        WorkoutExerciseView(exercise: workout_exercise, workoutExercises: [], active: true)
     }
     .modelContainer(container)
+    .environment(Settings())
 }
