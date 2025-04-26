@@ -104,12 +104,11 @@ struct WorkoutIconView : View {
 // TODO: name!!!!?!?!
 struct WorkoutExerciseLinkLink : View {
     var exercise: WorkoutExercise
-    var workoutExercises: [WorkoutExercise]
     @Environment(Settings.self) private var settings
     
     var body : some View {
         NavigationLink {
-            WorkoutExerciseView(exercise: exercise, workoutExercises: workoutExercises, active: false)
+            WorkoutExerciseView(exercise: exercise, active: false)
         } label: {
             VStack(alignment: .leading) {
                 Text(exercise.exercise.name)
@@ -127,7 +126,6 @@ struct WorkoutExerciseLinkLink : View {
 struct WorkoutView: View {
     var workout: Workout
     var exercises: [Exercise]
-    @Query var workoutExercises: [WorkoutExercise] // move up!
     @State private var isEditing = false
     @State private var showWorkoutInfoEditor = false
     @State private var isAddingExercises = false
@@ -219,7 +217,7 @@ struct WorkoutView: View {
                 
                 Section {
                     ForEach(sortedExercises) { exercise in
-                        WorkoutExerciseLinkLink(exercise: exercise, workoutExercises: workoutExercises)
+                        WorkoutExerciseLinkLink(exercise: exercise)
                     }
                     .onDelete { indexSet in
                         var updateExercises =

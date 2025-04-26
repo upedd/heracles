@@ -26,7 +26,8 @@ struct SummaryCard<T: View> : View {
                 Text(title)
                 
                     .font(.headline)
-                
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
                 Spacer()
                 //                Image(systemName: "chevron.right")
                 //                    .foregroundStyle(Color.accentColor)
@@ -635,6 +636,8 @@ struct TotalsCard : View {
                     .font(.subheadline)
                 Text("\(data.1.rounded().formatted()) \(settings.weightUnit.short())")
                     .font(.system(size: 26, weight: .semibold, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
             }
             Spacer()
             VStack(alignment: .leading) {
@@ -686,15 +689,15 @@ struct SummaryScreen: View {
                     }
                 }
                 .padding(.horizontal)
-                SummaryCard(title: "Weekly Activity") {
+                SummaryCard(title: "Past Year Activity") {
                     WorkoutActivityHeatmap(workouts: loggedWorkouts)
                 }
                 .padding(.horizontal)
                 
                 
                 HStack {
-                    SummaryCard(title: "Week Muscles") {
-                        VStack {
+                    SummaryCard(title: "Weekly Muscles") {
+                        VStack(alignment: .leading){
                             MuscleGroupsPieChart(workouts: loggedWorkouts)
                         }
                         .frame(height: 130)

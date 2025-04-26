@@ -139,6 +139,10 @@ class PlateCalculatorSolverCache {
     var lastCandidate: Candidate?
     
     func getCandidate(for target: Double, plates: [Plate]) -> Candidate {
+        if target <= 0 { // fast track for invalid values!
+            return Candidate(usedWeight: 0.0, plateCount: 0, combination: [])
+        }
+        
         var platesEqual = plates.count == lastPlates.count
         for i in 0..<min(plates.count, lastPlates.count) {
             if plates[i] != lastPlates[i] {

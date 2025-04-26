@@ -8,7 +8,14 @@ import SwiftUI
 
 class TimerManager: ObservableObject {
     @Published var isRunning = false
-    @Published var elapsedTime: TimeInterval = 0
+    var elapsedTime: TimeInterval {
+        if !isRunning {
+            return _elapsedTime
+        } else {
+            return _elapsedTime + Date().timeIntervalSince(self.lastTime!)
+        }
+    }
+    @Published var _elapsedTime: TimeInterval = 0
     private var lastTime: Date?
     private var timer: Timer?
     private var id: String
@@ -48,14 +55,14 @@ class TimerManager: ObservableObject {
     func pause() {
         if isRunning {
             isRunning = false
-            self.elapsedTime += Date().timeIntervalSince(self.lastTime!)
+            self._elapsedTime += Date().timeIntervalSince(self.lastTime!)
             saveState()
         }
         
     }
     
     func reset() {
-        elapsedTime = 0
+        _elapsedTime = 0
         isRunning = false
         //timer?.invalidate()
         saveState()
@@ -86,18 +93,18 @@ class TimerManager: ObservableObject {
     }
     
     private func saveState() {
-        UserDefaults.standard.set(elapsedTime, forKey: id + "." + elapsedKey)
+        UserDefaults.standard.set(_elapsedTime, forKey: id + "." + elapsedKey)
         UserDefaults.standard.set(isRunning, forKey: id + "." + isRunningKey)
         UserDefaults.standard.set(lastTime?.timeIntervalSince1970, forKey: id + "." + lastTimeKey)
         UserDefaults.standard.synchronize()
     }
     
     private func loadState() {
-        elapsedTime = UserDefaults.standard.double(forKey: id + "." + elapsedKey)
+        _elapsedTime = UserDefaults.standard.double(forKey: id + "." + elapsedKey)
         isRunning = UserDefaults.standard.bool(forKey: id + "." + isRunningKey)
         lastTime = Date(timeIntervalSince1970: UserDefaults.standard.double(forKey: id + "." + lastTimeKey))
         if isRunning {
-            elapsedTime += Date().timeIntervalSince(lastTime!)
+            _elapsedTime += Date().timeIntervalSince(lastTime!)
             runTimer()
         }
     }

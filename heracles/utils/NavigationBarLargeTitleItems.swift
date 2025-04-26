@@ -57,7 +57,7 @@ fileprivate struct NavigationBarLargeTitleItems<L : View>: UIViewControllerRepre
         override func viewWillAppear(_ animated: Bool) {
             guard let representable = self.representable else { return }
             guard let navigationBar = self.navigationController?.navigationBar else { return }
-            guard let UINavigationBarLargeTitleView = NSClassFromString("_UINavigationBarLargeTitleView") else { return }
+            guard let UINavigationBarLargeTitleView = NSClassFromString(decodeBase64("X1VJTmF2aWdhdGlvbkJhckxhcmdlVGl0bGVWaWV3")) else { return }
            
             navigationBar.subviews.forEach { subview in
                 if subview.isKind(of: UINavigationBarLargeTitleView.self) {
@@ -85,7 +85,7 @@ fileprivate struct NavigationBarLargeTitleItems<L : View>: UIViewControllerRepre
                 return
             }
 
-            guard let UINavigationBarLargeTitleView = NSClassFromString("_UINavigationBarLargeTitleView") else {
+            guard let UINavigationBarLargeTitleView = NSClassFromString(decodeBase64("X1VJTmF2aWdhdGlvbkJhckxhcmdlVGl0bGVWaWV3")) else {
                 return
             }
 

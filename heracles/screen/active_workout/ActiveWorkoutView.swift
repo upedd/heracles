@@ -262,7 +262,7 @@ struct ActiveWorkoutView: View {
     @State private var showCancellationWarning = false
     @State private var showFinishWarning = false
     
-    @Query private var workoutExercises: [WorkoutExercise]
+    //@Query private var workoutExercises: [WorkoutExercise]
     @Query private var exercises: [Exercise]
     
     @Environment(\.modelContext) private var modelContext
@@ -346,7 +346,7 @@ struct ActiveWorkoutView: View {
                 Section {
                     ForEach(sortedExercises) { exercise in
                         NavigationLink {
-                            WorkoutExerciseView(exercise: exercise, workoutExercises: workoutExercises, active: true)
+                            WorkoutExerciseView(exercise: exercise, active: true)
                         } label: {
                             HStack {
                                 Text(exercise.exercise.name)
@@ -384,11 +384,7 @@ struct ActiveWorkoutView: View {
                             for exercise in selected {
                                 let workoutExercise = WorkoutExercise(exercise: exercise, order: workout.exercises.count)
                                 // TODO: check
-                                let lastWorkoutExercise = workoutExercises.filter {
-                                    $0.exercise == exercise && $0.workout != nil && $0.workout! != workout && !$0.workout!.active
-                                }.sorted {
-                                    $0.workout!.date > $1.workout!.date
-                                }.first
+                                let lastWorkoutExercise = fetchWorkoutExercisesForCurrentWorkoutExercise(for: workoutExercise, using: modelContext).first
                                 
                                 if let lastWorkoutExercise {
                                     for set in lastWorkoutExercise.sets {
@@ -418,7 +414,7 @@ struct ActiveWorkoutView: View {
                 Button("Finish Workout") {
                     workout.endDate = Date.now
                     workout.duration = timerManager.elapsedTime
-                    for workoutExercise in workoutExercises {
+                    for workoutExercise in workout.exercises {
                         workoutExercise.sets.removeAll { set in
                             !set.completed
                         }

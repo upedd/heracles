@@ -778,6 +778,7 @@ final class WorkoutExercise {
     var workout: Workout?
     var template: WorkoutTemplate?
     var order: Int
+    var date = Date.now // TODO: should sync to workout date
     
     init(exercise: Exercise, order: Int, sets: [WorkoutSet] = []) {
         self.exercise = exercise

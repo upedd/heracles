@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-fileprivate func decodeBase64(_ base64: String) -> String {
+func decodeBase64(_ base64: String) -> String {
     guard let data = Data(base64Encoded: base64),
           let decoded = String(data: data, encoding: .utf8) else {
         fatalError("Failed to decode base64 string: \(base64)")

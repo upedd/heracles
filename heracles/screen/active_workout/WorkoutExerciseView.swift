@@ -721,7 +721,7 @@ struct WorkoutExerciseSetView : View  {
                                     if focusedField == WorkoutExerciseFocusState(setIdx: rawIdx, fieldIdx: .minutes) {
                                         showStopwatch = true
                                         stopwatchTimerManager.reset()
-                                        stopwatchTimerManager.elapsedTime = set.time ?? 0
+                                        stopwatchTimerManager._elapsedTime = set.time ?? 0
                                     }
                                 }
                             
@@ -752,7 +752,7 @@ struct WorkoutExerciseSetView : View  {
                                     if focusedField == WorkoutExerciseFocusState(setIdx: rawIdx, fieldIdx: .seconds) {
                                         showStopwatch = true
                                         stopwatchTimerManager.reset()
-                                        stopwatchTimerManager.elapsedTime = set.time ?? 0
+                                        stopwatchTimerManager._elapsedTime = set.time ?? 0
                                     }
                                 }
                         }
@@ -982,6 +982,31 @@ struct WorkoutExerciseFocusState : Hashable, Equatable {
     var setIdx: Int
     var fieldIdx: WorkoutExerciseSetField
 }
+// what a function name...
+func fetchWorkoutExercisesForCurrentWorkoutExercise(for exercise: WorkoutExercise, using modelContext: ModelContext) -> [WorkoutExercise] {
+    guard exercise.workout != nil else {
+        return []
+    }
+    let exerciseID = exercise.exercise.persistentModelID
+    let workoutID = exercise.workout!.persistentModelID
+    let predicate = #Predicate<WorkoutExercise> {
+        $0.workout?.persistentModelID != workoutID &&
+        $0.exercise.persistentModelID == exerciseID &&
+        $0.workout?.active == false
+    }
+    
+    var descriptor = FetchDescriptor<WorkoutExercise>(
+        predicate: predicate,
+        sortBy: [
+            .init(\.date)
+        ]
+    )
+    
+    descriptor.fetchLimit = 10
+    
+    // TODO: error checking
+    return try! modelContext.fetch(descriptor)
+}
 
 struct WorkoutExerciseView: View {
     struct AddSetButton : View {
@@ -1051,17 +1076,10 @@ struct WorkoutExerciseView: View {
         }
     }
     @State var editMode: EditMode = .inactive
-    // TODO: better query, better name!
-    
-    var workoutExercises: [WorkoutExercise]
-    var currentExerciseWorkoutExercises: [WorkoutExercise] {
-        workoutExercises.filter {
-            $0.exercise == exercise.exercise && $0.workout != nil && $0.workout! != exercise.workout && !$0.workout!.active
-        }
-    }
-    
+    @State var currentExerciseWorkoutExercises: [WorkoutExercise] = []
     var active: Bool
     var isInTemplate: Bool = false // temp!
+    
     
     @State var showInfoSheet = false
     @State var activeState: Bool = false
@@ -1119,6 +1137,7 @@ struct WorkoutExerciseView: View {
         }
         .onAppear {
             activeState = active
+            currentExerciseWorkoutExercises = fetchWorkoutExercisesForCurrentWorkoutExercise(for: exercise, using: modelContext) // TODO: move to init?
         }
         .onChange(of: stopwatchTimerManager.elapsedTime) {
             if let focusedField {
@@ -1248,7 +1267,7 @@ struct WorkoutExerciseView: View {
     }
     
     return NavigationStack {
-        WorkoutExerciseView(exercise: workout_exercise, workoutExercises: [], active: true)
+        WorkoutExerciseView(exercise: workout_exercise, active: true)
     }
     .modelContainer(container)
     .environment(Settings())

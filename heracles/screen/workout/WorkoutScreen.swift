@@ -83,14 +83,13 @@ struct TemplateView : View {
     var sortedExercises: [WorkoutExercise] {
         template.exercises.sorted {$0.order < $1.order}
     }
-    @Query private var workoutExercises: [WorkoutExercise]
     
     var startWorkout: ([WorkoutExercise], String?) -> Void
     var body : some View {
         List {
             ForEach(sortedExercises) { exercise in
                 NavigationLink {
-                    WorkoutExerciseView(exercise: exercise, workoutExercises: workoutExercises, active: false, isInTemplate: true)
+                    WorkoutExerciseView(exercise: exercise, active: false, isInTemplate: true)
                 } label: {
                     Text(exercise.exercise.name)
                 }
@@ -268,7 +267,6 @@ struct NewWorkoutTemplateView : View {
     @State var workoutExercises: [WorkoutExercise]
     @Query private var templates: [WorkoutTemplate]
     @Query private var exercises: [Exercise]
-    @Query private var globalWorkoutExercises: [WorkoutExercise]
     @State private var isAddingExercises = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -285,7 +283,7 @@ struct NewWorkoutTemplateView : View {
                 Section {
                     ForEach(sortedExercises) { exercise in
                         NavigationLink {
-                            WorkoutExerciseView(exercise: exercise, workoutExercises: globalWorkoutExercises, active: false, isInTemplate: true)
+                            WorkoutExerciseView(exercise: exercise, active: false, isInTemplate: true)
                         } label: {
                             Text(exercise.exercise.name)
                         }

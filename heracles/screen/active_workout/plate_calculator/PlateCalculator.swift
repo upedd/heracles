@@ -65,6 +65,7 @@ struct PlatesView: View {
                     .font(.headline)
                     .foregroundStyle(Color.red)
                     .multilineTextAlignment(.center)
+                    .lineLimit(2, reservesSpace: true)
                     
                     
             }
@@ -91,10 +92,6 @@ struct PlatesView: View {
 }
 
 // TODO: keeping track of default barbell for different exercises!
-
-// Possibly optimize using dp
-//
-
 struct PlateCalculator: View {
     var weight: Double = 108.5
     @Environment(\.dismiss) private var dismiss

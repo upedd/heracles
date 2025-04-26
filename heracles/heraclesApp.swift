@@ -92,7 +92,7 @@ struct heraclesApp: App {
                 preloadPlates(container)
                 preloadWorkoutTemplates(container)
             } catch {
-                print("Failed to create model container.")
+                print("Failed to create model container for the app!")
             }
         }
         .environment(Settings())
